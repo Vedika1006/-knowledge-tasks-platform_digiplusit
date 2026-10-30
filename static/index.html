@@ -3,274 +3,1050 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Knowledge & Tasks Platform</title>
-<style>
-  :root{
-    --bg:#0f1420; --panel:#171e2e; --panel2:#1e2740; --line:#2a344f;
-    --text:#e7ecf5; --muted:#93a0bd; --accent:#5b8cff; --accent2:#7c5bff;
-    --ok:#3ddc97; --warn:#ffcc66; --danger:#ff6b6b; --suggest:#c084fc;
+<title>Nexus AI — Knowledge & Tasks</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com/3.4.1"></script>
+<script src="https://unpkg.com/lucide@0.344.0/dist/umd/lucide.js"></script>
+<script>
+tailwind.config = {
+  darkMode: 'class',
+  theme: {
+    extend: {
+      fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+      colors: {
+        accent: { DEFAULT:'#06B6D4', light:'#22D3EE', dark:'#0891B2', 50:'#ecfeff', 100:'#cffafe', 500:'#06b6d4', 600:'#0891b2', 700:'#0e7490', 900:'#164e63' },
+        surface: { 50:'#f8fafc', 100:'#f1f5f9', 200:'#e2e8f0', 300:'#cbd5e1', 700:'#334155', 800:'#1e293b', 850:'#172033', 900:'#0f172a', 950:'#0a0f1e' },
+      }
+    }
   }
-  *{box-sizing:border-box}
-  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
-       background:var(--bg);color:var(--text);line-height:1.5}
-  header{padding:18px 24px;border-bottom:1px solid var(--line);
-         background:linear-gradient(90deg,#141b2b,#1a2138);display:flex;
-         align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
-  header h1{font-size:18px;margin:0;font-weight:650}
-  header .status{font-size:12px;color:var(--muted)}
-  .wrap{max-width:1150px;margin:0 auto;padding:20px;display:grid;
-        grid-template-columns:1fr 1fr;gap:16px}
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}
-  .card h2{font-size:14px;margin:0 0 12px;color:var(--accent);letter-spacing:.3px;
-           text-transform:uppercase;font-weight:650}
-  .full{grid-column:1/-1}
-  label{display:block;font-size:12px;color:var(--muted);margin:8px 0 4px}
-  input,textarea,select{width:100%;background:var(--panel2);border:1px solid var(--line);
-         color:var(--text);border-radius:8px;padding:9px 11px;font-size:13px;font-family:inherit}
-  textarea{resize:vertical;min-height:70px}
-  button{background:var(--accent);color:#fff;border:0;border-radius:8px;padding:9px 14px;
-         font-size:13px;font-weight:600;cursor:pointer;margin-top:10px}
-  button:hover{filter:brightness(1.1)}
-  button.ghost{background:transparent;border:1px solid var(--line);color:var(--muted);
-         padding:4px 9px;font-size:11px;margin:0}
-  button.ghost:hover{color:var(--text)}
-  .meeting{border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:10px;background:var(--panel2)}
-  .meeting .top{display:flex;justify-content:space-between;align-items:center;gap:8px}
-  .kind{font-size:10px;text-transform:uppercase;padding:2px 7px;border-radius:20px;
-        background:#263252;color:var(--muted);letter-spacing:.5px}
-  .summary{font-size:13px;color:var(--muted);margin:8px 0}
-  .decisions{font-size:12px;margin:6px 0}
-  .decisions li{color:var(--text)}
-  .item{display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-top:1px solid var(--line);font-size:13px}
-  .item .desc{flex:1}
-  .badge{font-size:10px;padding:1px 7px;border-radius:20px;white-space:nowrap}
-  .b-open{background:#2a3550;color:#9fb4 e0}
-  .b-open{background:#2a3550;color:#9fb4e0}
-  .b-in_progress{background:#4a3f12;color:var(--warn)}
-  .b-closed{background:#123a2a;color:var(--ok)}
-  .b-suggested{background:#2e1a44;color:var(--suggest);border:1px solid #4a2d6e}
-  .owner{font-size:11px;color:var(--muted)}
-  .suggest-note{font-size:11px;color:var(--suggest);margin-top:2px}
-  .brief-out,.link-out{white-space:pre-wrap;font-size:13px;background:var(--panel2);
-        border:1px solid var(--line);border-radius:8px;padding:12px;margin-top:10px;color:var(--text);min-height:20px}
-  .muted{color:var(--muted);font-size:12px}
-  .row{display:flex;gap:8px}
-  .row>*{flex:1}
-  select.status-sel{width:auto;padding:3px 6px;font-size:11px;margin:0}
+}
+</script>
+<style>
+  :root { --accent:#06B6D4; }
+  body { font-family: 'Inter', system-ui, sans-serif; }
+  .sidebar-link.active { background: rgba(6,182,212,0.12); color: #06B6D4; }
+  .dark .sidebar-link.active { background: rgba(6,182,212,0.15); }
+  .sidebar-link:hover:not(.active) { background: rgba(100,116,139,0.08); }
+  .dark .sidebar-link:hover:not(.active) { background: rgba(100,116,139,0.12); }
+  .toast-enter { animation: slideIn .3s ease-out; }
+  @keyframes slideIn { from { transform:translateX(100%); opacity:0; } to { transform:translateX(0); opacity:1; } }
+  .toast-exit { animation: slideOut .25s ease-in forwards; }
+  @keyframes slideOut { to { transform:translateX(100%); opacity:0; } }
+  .modal-backdrop { animation: fadeIn .15s ease-out; }
+  @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+  .modal-content { animation: scaleIn .2s ease-out; }
+  @keyframes scaleIn { from { transform:scale(.95); opacity:0; } to { transform:scale(1); opacity:1; } }
+  .spinner { border:2px solid transparent; border-top-color:currentColor; border-radius:50%; width:16px; height:16px; animation:spin .6s linear infinite; display:inline-block; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 8px center; -webkit-appearance:none; appearance:none; padding-right:28px; }
+  .kpi-card { transition: transform .15s, box-shadow .15s; }
+  .kpi-card:hover { transform: translateY(-2px); box-shadow: 0 8px 25px -5px rgba(0,0,0,.1); }
+  .dark .kpi-card:hover { box-shadow: 0 8px 25px -5px rgba(0,0,0,.4); }
+  ::-webkit-scrollbar { width:6px; }
+  ::-webkit-scrollbar-track { background:transparent; }
+  ::-webkit-scrollbar-thumb { background:#cbd5e1; border-radius:3px; }
+  .dark ::-webkit-scrollbar-thumb { background:#334155; }
 </style>
 </head>
-<body>
-<header>
-  <h1>🧠 AI Knowledge &amp; Tasks Platform</h1>
-  <div class="status" id="status">checking…</div>
-</header>
+<body class="bg-surface-50 dark:bg-surface-950 text-surface-800 dark:text-surface-200 min-h-screen">
 
-<div class="wrap">
+<!-- TOAST CONTAINER -->
+<div id="toasts" class="fixed top-4 right-4 z-[100] flex flex-col gap-2 pointer-events-none"></div>
 
-  <!-- CREATE MEETING + EXTRACT -->
-  <div class="card">
-    <h2>1 · New Meeting / Handover</h2>
-    <label>Title</label>
-    <input id="m-title" placeholder="Weekly sync — 30 Oct">
-    <div class="row">
-      <div>
-        <label>Type</label>
-        <select id="m-kind"><option value="meeting">meeting</option><option value="handover">handover</option></select>
+<!-- MODAL CONTAINER -->
+<div id="modal-root"></div>
+
+<!-- LAYOUT -->
+<div class="flex min-h-screen">
+
+  <!-- SIDEBAR -->
+  <aside id="sidebar" class="w-60 shrink-0 bg-white dark:bg-surface-900 border-r border-surface-200 dark:border-surface-700 flex flex-col fixed inset-y-0 left-0 z-40 transition-transform lg:translate-x-0 -translate-x-full">
+    <!-- Brand -->
+    <div class="h-14 flex items-center gap-2.5 px-5 border-b border-surface-200 dark:border-surface-700">
+      <div class="w-8 h-8 rounded-lg bg-accent flex items-center justify-center">
+        <i data-lucide="brain" class="w-4.5 h-4.5 text-white"></i>
       </div>
-      <div>
-        <label>Carry open items from meeting ID (optional)</label>
-        <input id="m-carry" type="number" placeholder="e.g. 1">
+      <span class="font-bold text-[15px] tracking-tight">Nexus AI</span>
+    </div>
+    <!-- Nav -->
+    <nav class="flex-1 py-3 px-3 space-y-0.5 overflow-y-auto">
+      <a href="#" class="sidebar-link active flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium transition-colors" data-view="dashboard" onclick="navigate('dashboard',event)">
+        <i data-lucide="layout-dashboard" class="w-4 h-4 opacity-70"></i> Overview
+      </a>
+      <a href="#" class="sidebar-link flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium text-surface-500 dark:text-surface-400 transition-colors" data-view="meetings" onclick="navigate('meetings',event)">
+        <i data-lucide="calendar" class="w-4 h-4 opacity-70"></i> Meetings
+      </a>
+      <a href="#" class="sidebar-link flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium text-surface-500 dark:text-surface-400 transition-colors" data-view="items" onclick="navigate('items',event)">
+        <i data-lucide="check-square" class="w-4 h-4 opacity-70"></i> Action Items
+      </a>
+      <a href="#" class="sidebar-link flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium text-surface-500 dark:text-surface-400 transition-colors" data-view="handovers" onclick="navigate('handovers',event)">
+        <i data-lucide="arrow-right-left" class="w-4 h-4 opacity-70"></i> Handovers
+      </a>
+      <a href="#" class="sidebar-link flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium text-surface-500 dark:text-surface-400 transition-colors" data-view="brief" onclick="navigate('brief',event)">
+        <i data-lucide="sparkles" class="w-4 h-4 opacity-70"></i> AI Catch-up Brief
+      </a>
+      <a href="#" class="sidebar-link flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium text-surface-500 dark:text-surface-400 transition-colors" data-view="knowledge" onclick="navigate('knowledge',event)">
+        <i data-lucide="book-open" class="w-4 h-4 opacity-70"></i> Knowledge Base
+      </a>
+    </nav>
+    <!-- Footer -->
+    <div class="px-4 py-3 border-t border-surface-200 dark:border-surface-700">
+      <div class="flex items-center gap-2 text-[11px] text-surface-400">
+        <span class="w-2 h-2 rounded-full" id="ai-dot"></span>
+        <span id="ai-status-text">Checking AI…</span>
       </div>
     </div>
-    <label>Participants (comma separated)</label>
-    <input id="m-parts" placeholder="Rahul, Priya, Sam">
-    <label>Agenda</label>
-    <input id="m-agenda" placeholder="Pricing, roadmap, hiring">
-    <button onclick="createMeeting()">Create meeting</button>
-  </div>
+  </aside>
 
-  <div class="card">
-    <h2>2 · Paste Raw Notes → AI Recap</h2>
-    <label>Meeting ID to attach to</label>
-    <input id="e-mid" type="number" placeholder="meeting id">
-    <label>Raw notes / chat / email dump</label>
-    <textarea id="e-raw" placeholder="discussed pricing. Rahul will send revised quote by Friday. We agreed to drop the free tier. Priya said she'll loop in finance about the refund policy..."></textarea>
-    <button onclick="extract()">Run AI extraction + commitment catcher</button>
-    <div class="muted" id="e-status" style="margin-top:8px"></div>
-  </div>
+  <!-- MAIN -->
+  <div class="flex-1 lg:ml-60 flex flex-col min-h-screen">
+    <!-- TOPBAR -->
+    <header class="h-14 bg-white/80 dark:bg-surface-900/80 backdrop-blur border-b border-surface-200 dark:border-surface-700 flex items-center justify-between px-5 sticky top-0 z-30">
+      <button onclick="toggleSidebar()" class="lg:hidden p-1.5 rounded-lg hover:bg-surface-100 dark:hover:bg-surface-800">
+        <i data-lucide="menu" class="w-5 h-5"></i>
+      </button>
+      <div id="topbar-title" class="text-sm font-semibold hidden lg:block">Overview</div>
+      <div class="flex items-center gap-2">
+        <button onclick="toggleTheme()" class="p-2 rounded-lg hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors" title="Toggle theme">
+          <i data-lucide="sun" class="w-4 h-4 dark:hidden"></i>
+          <i data-lucide="moon" class="w-4 h-4 hidden dark:block"></i>
+        </button>
+      </div>
+    </header>
 
-  <!-- MEETINGS LIST -->
-  <div class="card full">
-    <h2>3 · Meetings &amp; Action Items <button class="ghost" onclick="loadMeetings()">↻ refresh</button></h2>
-    <div id="meetings"></div>
-  </div>
+    <!-- CONTENT -->
+    <main class="flex-1 p-5 lg:p-6 overflow-y-auto">
 
-  <!-- BRIEF -->
-  <div class="card">
-    <h2>4 · AI Catch-up Brief</h2>
-    <label>Person name</label>
-    <input id="b-person" placeholder="Rahul">
-    <button onclick="getBrief()">Generate brief</button>
-    <div class="brief-out" id="b-out"></div>
-  </div>
+      <!-- ============== DASHBOARD VIEW ============== -->
+      <div id="view-dashboard" class="view">
+        <div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <h1 class="text-xl font-bold">Welcome back</h1>
+            <p class="text-sm text-surface-500 dark:text-surface-400 mt-0.5">Here's what's happening across your meetings and tasks.</p>
+          </div>
+          <button onclick="openNewMeetingModal()" class="inline-flex items-center gap-2 bg-accent hover:bg-accent-dark text-white text-sm font-semibold px-4 py-2.5 rounded-lg transition-colors shadow-sm">
+            <i data-lucide="plus" class="w-4 h-4"></i> New Meeting
+          </button>
+        </div>
 
-  <!-- KNOWLEDGE -->
-  <div class="card">
-    <h2>5 · Knowledge Base + AI Linking</h2>
-    <label>Add a document — title</label>
-    <input id="k-title" placeholder="Q3 pricing decision">
-    <label>Content</label>
-    <textarea id="k-content" placeholder="In Q3 we decided to move to usage-based pricing..."></textarea>
-    <button onclick="addKnowledge()">Add document</button>
-    <hr style="border-color:var(--line);margin:14px 0">
-    <label>Find related docs for…</label>
-    <input id="k-query" placeholder="revise the pricing quote">
-    <button onclick="linkKnowledge()">Find related (semantic)</button>
-    <div class="link-out" id="k-out"></div>
-  </div>
+        <!-- KPI Cards -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div class="kpi-card bg-white dark:bg-surface-850 rounded-xl border border-surface-200 dark:border-surface-700 p-4">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-medium text-surface-500 dark:text-surface-400 uppercase tracking-wide">Open Tasks</span>
+              <div class="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center"><i data-lucide="circle-dot" class="w-4 h-4 text-blue-500"></i></div>
+            </div>
+            <div class="text-2xl font-bold" id="kpi-open">—</div>
+          </div>
+          <div class="kpi-card bg-white dark:bg-surface-850 rounded-xl border border-surface-200 dark:border-surface-700 p-4">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-medium text-surface-500 dark:text-surface-400 uppercase tracking-wide">In Progress</span>
+              <div class="w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-900/30 flex items-center justify-center"><i data-lucide="loader" class="w-4 h-4 text-amber-500"></i></div>
+            </div>
+            <div class="text-2xl font-bold" id="kpi-progress">—</div>
+          </div>
+          <div class="kpi-card bg-white dark:bg-surface-850 rounded-xl border border-surface-200 dark:border-surface-700 p-4">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-medium text-surface-500 dark:text-surface-400 uppercase tracking-wide">Completed</span>
+              <div class="w-8 h-8 rounded-lg bg-green-50 dark:bg-green-900/30 flex items-center justify-center"><i data-lucide="check-circle-2" class="w-4 h-4 text-green-500"></i></div>
+            </div>
+            <div class="text-2xl font-bold" id="kpi-closed">—</div>
+          </div>
+          <div class="kpi-card bg-white dark:bg-surface-850 rounded-xl border border-surface-200 dark:border-surface-700 p-4">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-medium text-surface-500 dark:text-surface-400 uppercase tracking-wide">Total Meetings</span>
+              <div class="w-8 h-8 rounded-lg bg-cyan-50 dark:bg-cyan-900/30 flex items-center justify-center"><i data-lucide="calendar" class="w-4 h-4 text-accent"></i></div>
+            </div>
+            <div class="text-2xl font-bold" id="kpi-meetings">—</div>
+          </div>
+        </div>
 
+        <!-- Dashboard Grid -->
+        <div class="grid lg:grid-cols-2 gap-5">
+          <!-- Recent Meetings -->
+          <div class="bg-white dark:bg-surface-850 rounded-xl border border-surface-200 dark:border-surface-700 p-5">
+            <div class="flex items-center justify-between mb-4">
+              <h2 class="text-sm font-semibold">Recent Meetings</h2>
+              <button onclick="navigate('meetings')" class="text-xs text-accent hover:underline">View all</button>
+            </div>
+            <div id="dash-meetings" class="space-y-2"></div>
+          </div>
+
+          <!-- Priority Action Items -->
+          <div class="bg-white dark:bg-surface-850 rounded-xl border border-surface-200 dark:border-surface-700 p-5">
+            <div class="flex items-center justify-between mb-4">
+              <h2 class="text-sm font-semibold">Priority Action Items</h2>
+              <button onclick="navigate('items')" class="text-xs text-accent hover:underline">View all</button>
+            </div>
+            <div id="dash-items" class="space-y-2"></div>
+          </div>
+
+          <!-- Suggested Commitments -->
+          <div class="lg:col-span-2 bg-white dark:bg-surface-850 rounded-xl border border-surface-200 dark:border-surface-700 p-5">
+            <div class="flex items-center gap-2 mb-4">
+              <i data-lucide="sparkles" class="w-4 h-4 text-purple-500"></i>
+              <h2 class="text-sm font-semibold">Suggested Commitments</h2>
+              <span class="text-[10px] font-medium bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400 px-2 py-0.5 rounded-full">AI Detected</span>
+            </div>
+            <div id="dash-suggested" class="space-y-2"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============== MEETINGS VIEW ============== -->
+      <div id="view-meetings" class="view hidden">
+        <div class="mb-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <h1 class="text-xl font-bold">Meetings</h1>
+          <button onclick="openNewMeetingModal()" class="inline-flex items-center gap-2 bg-accent hover:bg-accent-dark text-white text-sm font-semibold px-4 py-2.5 rounded-lg transition-colors shadow-sm">
+            <i data-lucide="plus" class="w-4 h-4"></i> New Meeting
+          </button>
+        </div>
+        <div id="meetings-list" class="space-y-3"></div>
+      </div>
+
+      <!-- ============== MEETING DETAIL VIEW ============== -->
+      <div id="view-meeting-detail" class="view hidden">
+        <div id="meeting-detail-content"></div>
+      </div>
+
+      <!-- ============== ACTION ITEMS VIEW ============== -->
+      <div id="view-items" class="view hidden">
+        <div class="mb-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <h1 class="text-xl font-bold">Action Items</h1>
+        </div>
+        <!-- Filters -->
+        <div class="flex flex-wrap gap-2 mb-4">
+          <button class="filter-btn active text-xs font-medium px-3 py-1.5 rounded-full border transition-colors" data-filter="all" onclick="setItemFilter('all',this)">All</button>
+          <button class="filter-btn text-xs font-medium px-3 py-1.5 rounded-full border border-surface-200 dark:border-surface-700 text-surface-500 hover:border-blue-300 transition-colors" data-filter="open" onclick="setItemFilter('open',this)">Open</button>
+          <button class="filter-btn text-xs font-medium px-3 py-1.5 rounded-full border border-surface-200 dark:border-surface-700 text-surface-500 hover:border-amber-300 transition-colors" data-filter="in_progress" onclick="setItemFilter('in_progress',this)">In Progress</button>
+          <button class="filter-btn text-xs font-medium px-3 py-1.5 rounded-full border border-surface-200 dark:border-surface-700 text-surface-500 hover:border-green-300 transition-colors" data-filter="closed" onclick="setItemFilter('closed',this)">Closed</button>
+          <button class="filter-btn text-xs font-medium px-3 py-1.5 rounded-full border border-surface-200 dark:border-surface-700 text-surface-500 hover:border-purple-300 transition-colors" data-filter="suggested" onclick="setItemFilter('suggested',this)">
+            <span class="inline-flex items-center gap-1"><i data-lucide="sparkles" class="w-3 h-3"></i> Suggested</span>
+          </button>
+        </div>
+        <!-- Owner filter -->
+        <div class="mb-4">
+          <select id="owner-filter" onchange="renderItemsView()" class="text-xs bg-white dark:bg-surface-850 border border-surface-200 dark:border-surface-700 rounded-lg px-3 py-1.5">
+            <option value="">All owners</option>
+          </select>
+        </div>
+        <div id="items-list" class="space-y-2"></div>
+      </div>
+
+      <!-- ============== HANDOVERS VIEW ============== -->
+      <div id="view-handovers" class="view hidden">
+        <div class="mb-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <h1 class="text-xl font-bold">Handovers</h1>
+          <button onclick="openNewMeetingModal('handover')" class="inline-flex items-center gap-2 bg-accent hover:bg-accent-dark text-white text-sm font-semibold px-4 py-2.5 rounded-lg transition-colors shadow-sm">
+            <i data-lucide="plus" class="w-4 h-4"></i> New Handover
+          </button>
+        </div>
+        <div id="handovers-list" class="space-y-3"></div>
+      </div>
+
+      <!-- ============== BRIEF VIEW ============== -->
+      <div id="view-brief" class="view hidden">
+        <h1 class="text-xl font-bold mb-5">AI Catch-up Brief</h1>
+        <div class="max-w-2xl bg-white dark:bg-surface-850 rounded-xl border border-surface-200 dark:border-surface-700 p-5">
+          <p class="text-sm text-surface-500 dark:text-surface-400 mb-4">Generate a personalized catch-up brief for someone who missed a meeting or is taking over work.</p>
+          <label class="block text-xs font-medium text-surface-500 dark:text-surface-400 mb-1.5">Person name</label>
+          <div class="flex gap-2">
+            <input id="brief-person" class="flex-1 bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 rounded-lg px-3 py-2 text-sm" placeholder="e.g. Rahul">
+            <button onclick="generateBrief()" id="brief-btn" class="inline-flex items-center gap-2 bg-accent hover:bg-accent-dark text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
+              <i data-lucide="sparkles" class="w-4 h-4"></i> Generate
+            </button>
+          </div>
+          <div id="brief-result" class="hidden mt-5">
+            <div class="flex items-center justify-between mb-2">
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-medium text-surface-500">Open items: </span>
+                <span id="brief-count" class="text-xs font-bold text-accent">0</span>
+              </div>
+              <button onclick="copyBrief()" class="inline-flex items-center gap-1 text-xs text-surface-500 hover:text-accent transition-colors">
+                <i data-lucide="copy" class="w-3 h-3"></i> Copy
+              </button>
+            </div>
+            <div id="brief-text" class="bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 rounded-lg p-4 text-sm leading-relaxed whitespace-pre-wrap"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============== KNOWLEDGE VIEW ============== -->
+      <div id="view-knowledge" class="view hidden">
+        <h1 class="text-xl font-bold mb-5">Knowledge Base</h1>
+        <div class="grid lg:grid-cols-2 gap-5">
+          <!-- Add Document -->
+          <div class="bg-white dark:bg-surface-850 rounded-xl border border-surface-200 dark:border-surface-700 p-5">
+            <h2 class="text-sm font-semibold mb-3">Add Document</h2>
+            <label class="block text-xs font-medium text-surface-500 dark:text-surface-400 mb-1">Title</label>
+            <input id="kb-title" class="w-full bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 rounded-lg px-3 py-2 text-sm mb-3" placeholder="Q3 pricing decision">
+            <label class="block text-xs font-medium text-surface-500 dark:text-surface-400 mb-1">Content</label>
+            <textarea id="kb-content" class="w-full bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 rounded-lg px-3 py-2 text-sm min-h-[80px]" placeholder="In Q3 we decided to move to usage-based pricing..."></textarea>
+            <button onclick="addKnowledge()" class="mt-2 inline-flex items-center gap-2 bg-accent hover:bg-accent-dark text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
+              <i data-lucide="plus" class="w-4 h-4"></i> Add Document
+            </button>
+          </div>
+
+          <!-- Search Related -->
+          <div class="bg-white dark:bg-surface-850 rounded-xl border border-surface-200 dark:border-surface-700 p-5">
+            <h2 class="text-sm font-semibold mb-3">Find Related Documents</h2>
+            <label class="block text-xs font-medium text-surface-500 dark:text-surface-400 mb-1">Search query</label>
+            <div class="flex gap-2">
+              <input id="kb-query" class="flex-1 bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 rounded-lg px-3 py-2 text-sm" placeholder="revise the pricing quote">
+              <button onclick="searchKnowledge()" class="inline-flex items-center gap-2 bg-accent hover:bg-accent-dark text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
+                <i data-lucide="search" class="w-4 h-4"></i> Search
+              </button>
+            </div>
+            <div id="kb-results" class="mt-3 space-y-2"></div>
+          </div>
+
+          <!-- Documents List -->
+          <div class="lg:col-span-2 bg-white dark:bg-surface-850 rounded-xl border border-surface-200 dark:border-surface-700 p-5">
+            <div class="flex items-center justify-between mb-3">
+              <h2 class="text-sm font-semibold">All Documents</h2>
+              <button onclick="loadKnowledge()" class="text-xs text-accent hover:underline">Refresh</button>
+            </div>
+            <div id="kb-list" class="space-y-2"></div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
 </div>
 
-<script>
-const API = ""; // same origin
+<!-- SIDEBAR OVERLAY (mobile) -->
+<div id="sidebar-overlay" class="fixed inset-0 bg-black/40 z-30 hidden lg:hidden" onclick="toggleSidebar()"></div>
 
-async function api(path, opts={}){
-  const res = await fetch(API + path, {
-    headers:{"Content-Type":"application/json"}, ...opts
-  });
-  const data = await res.json().catch(()=>({}));
-  if(!res.ok){ throw new Error(data.detail || ("HTTP "+res.status)); }
+<script>
+// ── State ──
+let allMeetings = [];
+let aiEnabled = false;
+let currentFilter = 'all';
+let currentView = 'dashboard';
+
+// ── API Helper ──
+async function api(path, opts = {}) {
+  const res = await fetch(path, { headers: { 'Content-Type': 'application/json' }, ...opts });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.detail || 'HTTP ' + res.status);
   return data;
 }
 
-async function checkHealth(){
-  try{
-    const h = await api("/api/health");
-    document.getElementById("status").textContent =
-      h.ai_enabled ? "● AI online (Gemini)" : "● AI off — rule-based fallback mode";
-    document.getElementById("status").style.color = h.ai_enabled ? "var(--ok)" : "var(--warn)";
-  }catch(e){ document.getElementById("status").textContent = "backend unreachable"; }
+// ── Toast ──
+function toast(msg, type = 'success') {
+  const el = document.createElement('div');
+  const colors = { success: 'bg-green-600', error: 'bg-red-600', info: 'bg-accent' };
+  const icons = { success: 'check-circle-2', error: 'alert-circle', info: 'info' };
+  el.className = `toast-enter pointer-events-auto flex items-center gap-2 px-4 py-2.5 rounded-lg text-white text-sm font-medium shadow-lg ${colors[type] || colors.info}`;
+  el.innerHTML = `<i data-lucide="${icons[type] || icons.info}" class="w-4 h-4"></i> ${esc(msg)}`;
+  document.getElementById('toasts').appendChild(el);
+  lucide.createIcons({ attrs: {}, nameAttr: 'data-lucide' });
+  setTimeout(() => { el.classList.replace('toast-enter', 'toast-exit'); setTimeout(() => el.remove(), 300); }, 3000);
 }
 
-async function createMeeting(){
-  const parts = document.getElementById("m-parts").value.split(",").map(s=>s.trim()).filter(Boolean);
+// ── Modal ──
+function openModal(title, bodyHtml, opts = {}) {
+  const root = document.getElementById('modal-root');
+  const wide = opts.wide ? 'max-w-2xl' : 'max-w-lg';
+  root.innerHTML = `
+    <div class="modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+      <div class="modal-content bg-white dark:bg-surface-850 rounded-2xl border border-surface-200 dark:border-surface-700 shadow-2xl w-full ${wide} max-h-[85vh] flex flex-col">
+        <div class="flex items-center justify-between px-5 py-4 border-b border-surface-200 dark:border-surface-700">
+          <h3 class="text-sm font-semibold">${title}</h3>
+          <button onclick="closeModal()" class="p-1 rounded-lg hover:bg-surface-100 dark:hover:bg-surface-800"><i data-lucide="x" class="w-4 h-4"></i></button>
+        </div>
+        <div class="px-5 py-4 overflow-y-auto flex-1">${bodyHtml}</div>
+      </div>
+    </div>`;
+  lucide.createIcons({ attrs: {}, nameAttr: 'data-lucide' });
+  root.querySelector('.modal-backdrop').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
+}
+function closeModal() { document.getElementById('modal-root').innerHTML = ''; }
+
+// ── Theme ──
+function toggleTheme() {
+  document.documentElement.classList.toggle('dark');
+  try { localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light'); } catch(e) {}
+}
+function initTheme() {
+  try {
+    const saved = localStorage.getItem('theme');
+    if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme:dark)').matches)) {
+      document.documentElement.classList.add('dark');
+    }
+  } catch(e) {}
+}
+initTheme();
+
+// ── Sidebar (mobile) ──
+function toggleSidebar() {
+  const sb = document.getElementById('sidebar');
+  const ov = document.getElementById('sidebar-overlay');
+  sb.classList.toggle('-translate-x-full');
+  ov.classList.toggle('hidden');
+}
+
+// ── Navigation ──
+function navigate(view, event) {
+  if (event) event.preventDefault();
+  currentView = view;
+  document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+  const el = document.getElementById('view-' + view);
+  if (el) el.classList.remove('hidden');
+  document.querySelectorAll('.sidebar-link').forEach(l => {
+    l.classList.toggle('active', l.dataset.view === view);
+    if (l.dataset.view === view) l.classList.remove('text-surface-500', 'dark:text-surface-400');
+    else { l.classList.add('text-surface-500', 'dark:text-surface-400'); }
+  });
+  document.getElementById('topbar-title').textContent = { dashboard:'Overview', meetings:'Meetings', items:'Action Items', handovers:'Handovers', brief:'AI Catch-up Brief', knowledge:'Knowledge Base', 'meeting-detail':'Meeting Detail' }[view] || '';
+  // Close mobile sidebar
+  const sb = document.getElementById('sidebar');
+  if (!sb.classList.contains('-translate-x-full') && window.innerWidth < 1024) toggleSidebar();
+  // Refresh data
+  if (view === 'dashboard') refreshDashboard();
+  else if (view === 'meetings') renderMeetingsList();
+  else if (view === 'items') renderItemsView();
+  else if (view === 'handovers') renderHandoversList();
+  else if (view === 'knowledge') loadKnowledge();
+}
+
+// ── Health ──
+async function checkHealth() {
+  try {
+    const h = await api('/api/health');
+    aiEnabled = h.ai_enabled;
+    const dot = document.getElementById('ai-dot');
+    const text = document.getElementById('ai-status-text');
+    dot.className = 'w-2 h-2 rounded-full ' + (aiEnabled ? 'bg-green-500' : 'bg-amber-500');
+    text.textContent = aiEnabled ? 'AI Online (Groq)' : 'AI Off — Fallback Mode';
+  } catch(e) {
+    document.getElementById('ai-dot').className = 'w-2 h-2 rounded-full bg-red-500';
+    document.getElementById('ai-status-text').textContent = 'Backend unreachable';
+  }
+}
+
+// ── Load All Data ──
+async function loadAllData() {
+  try {
+    allMeetings = await api('/api/meetings');
+  } catch(e) {
+    allMeetings = [];
+    toast('Failed to load data', 'error');
+  }
+}
+
+function getAllItems() {
+  const items = [];
+  allMeetings.forEach(m => (m.action_items || []).forEach(it => items.push({ ...it, meeting_title: m.title })));
+  return items;
+}
+
+// ── Dashboard ──
+async function refreshDashboard() {
+  await loadAllData();
+  const items = getAllItems();
+  document.getElementById('kpi-open').textContent = items.filter(i => i.status === 'open').length;
+  document.getElementById('kpi-progress').textContent = items.filter(i => i.status === 'in_progress').length;
+  document.getElementById('kpi-closed').textContent = items.filter(i => i.status === 'closed').length;
+  document.getElementById('kpi-meetings').textContent = allMeetings.length;
+
+  // Recent Meetings (latest 5)
+  const dashMeetings = document.getElementById('dash-meetings');
+  const recent = allMeetings.slice(0, 5);
+  if (!recent.length) {
+    dashMeetings.innerHTML = emptyState('No meetings yet', 'calendar');
+  } else {
+    dashMeetings.innerHTML = recent.map(m => `
+      <a href="#" onclick="openMeetingDetail(${m.id},event)" class="flex items-center justify-between p-3 rounded-lg hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors group">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg ${m.kind === 'handover' ? 'bg-purple-50 dark:bg-purple-900/30' : 'bg-accent/10'} flex items-center justify-center">
+            <i data-lucide="${m.kind === 'handover' ? 'arrow-right-left' : 'calendar'}" class="w-4 h-4 ${m.kind === 'handover' ? 'text-purple-500' : 'text-accent'}"></i>
+          </div>
+          <div>
+            <div class="text-sm font-medium group-hover:text-accent transition-colors">${esc(m.title)}</div>
+            <div class="text-xs text-surface-400">${(m.participants||[]).join(', ') || 'No participants'}</div>
+          </div>
+        </div>
+        <span class="text-[10px] uppercase tracking-wide font-medium px-2 py-0.5 rounded-full ${m.kind === 'handover' ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400' : 'bg-surface-100 dark:bg-surface-700 text-surface-500'}">${m.kind}</span>
+      </a>`).join('');
+  }
+
+  // Priority Items (open, first 5)
+  const dashItems = document.getElementById('dash-items');
+  const openItems = items.filter(i => i.status === 'open' && i.source !== 'suggested').slice(0, 5);
+  if (!openItems.length) {
+    dashItems.innerHTML = emptyState('No open items', 'check-square');
+  } else {
+    dashItems.innerHTML = openItems.map(it => renderItemRow(it)).join('');
+  }
+
+  // Suggested
+  const dashSuggested = document.getElementById('dash-suggested');
+  const suggested = items.filter(i => i.source === 'suggested');
+  if (!suggested.length) {
+    dashSuggested.innerHTML = emptyState('No suggested commitments', 'sparkles');
+  } else {
+    dashSuggested.innerHTML = suggested.map(it => `
+      <div class="flex items-start gap-3 p-3 rounded-lg bg-purple-50/50 dark:bg-purple-900/10 border border-purple-200/50 dark:border-purple-800/30">
+        <div class="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center shrink-0 mt-0.5">
+          <i data-lucide="sparkles" class="w-4 h-4 text-purple-500"></i>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="text-sm font-medium">${esc(it.description)}</div>
+          <div class="text-xs text-surface-400 mt-0.5">Owner: ${esc(it.owner)} ${it.due_date ? '· Due: ' + esc(it.due_date) : ''} ${it.parent_item_id ? '· Carried from #' + it.parent_item_id : ''}</div>
+          <div class="flex items-center gap-1 mt-1">
+            <span class="inline-flex items-center gap-1 text-[10px] font-medium text-purple-600 dark:text-purple-400 bg-purple-100 dark:bg-purple-900/40 px-2 py-0.5 rounded-full">
+              <i data-lucide="sparkles" class="w-2.5 h-2.5"></i> AI Suggested · Needs Review
+            </span>
+          </div>
+        </div>
+        <button onclick="acceptSuggestion(${it.id},this)" class="shrink-0 text-xs font-medium text-green-600 hover:text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/20 hover:bg-green-100 dark:hover:bg-green-900/30 px-3 py-1.5 rounded-lg transition-colors">Accept</button>
+      </div>`).join('');
+  }
+  lucide.createIcons({ attrs: {}, nameAttr: 'data-lucide' });
+}
+
+// ── Meetings List ──
+function renderMeetingsList() {
+  const list = document.getElementById('meetings-list');
+  const meetings = allMeetings.filter(m => m.kind === 'meeting');
+  if (!meetings.length) { list.innerHTML = emptyState('No meetings yet. Create one to get started.', 'calendar'); return; }
+  list.innerHTML = meetings.map(m => renderMeetingCard(m)).join('');
+  lucide.createIcons({ attrs: {}, nameAttr: 'data-lucide' });
+}
+
+function renderHandoversList() {
+  const list = document.getElementById('handovers-list');
+  const handovers = allMeetings.filter(m => m.kind === 'handover');
+  if (!handovers.length) { list.innerHTML = emptyState('No handovers yet.', 'arrow-right-left'); return; }
+  list.innerHTML = handovers.map(m => renderMeetingCard(m)).join('');
+  lucide.createIcons({ attrs: {}, nameAttr: 'data-lucide' });
+}
+
+function renderMeetingCard(m) {
+  const itemCount = (m.action_items || []).length;
+  const openCount = (m.action_items || []).filter(i => i.status === 'open').length;
+  return `
+    <div class="bg-white dark:bg-surface-850 rounded-xl border border-surface-200 dark:border-surface-700 p-4 hover:border-accent/40 transition-colors cursor-pointer" onclick="openMeetingDetail(${m.id})">
+      <div class="flex items-start justify-between gap-3">
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="text-sm font-semibold">#${m.id} · ${esc(m.title)}</span>
+            <span class="text-[10px] uppercase tracking-wide font-medium px-2 py-0.5 rounded-full ${m.kind === 'handover' ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400' : 'bg-surface-100 dark:bg-surface-700 text-surface-500'}">${m.kind}</span>
+          </div>
+          ${m.summary ? `<p class="text-sm text-surface-500 dark:text-surface-400 line-clamp-2">${esc(m.summary)}</p>` : ''}
+          <div class="flex items-center gap-3 mt-2 text-xs text-surface-400">
+            <span class="inline-flex items-center gap-1"><i data-lucide="users" class="w-3 h-3"></i> ${(m.participants||[]).join(', ') || 'None'}</span>
+            <span class="inline-flex items-center gap-1"><i data-lucide="list-checks" class="w-3 h-3"></i> ${itemCount} items (${openCount} open)</span>
+          </div>
+        </div>
+        <i data-lucide="chevron-right" class="w-4 h-4 text-surface-300 dark:text-surface-600 shrink-0 mt-1"></i>
+      </div>
+    </div>`;
+}
+
+// ── Meeting Detail ──
+function openMeetingDetail(id, event) {
+  if (event) event.preventDefault();
+  const m = allMeetings.find(x => x.id === id);
+  if (!m) { toast('Meeting not found', 'error'); return; }
+  const el = document.getElementById('meeting-detail-content');
+  const decisions = (m.decisions || []);
+  const items = (m.action_items || []);
+  const explicitItems = items.filter(i => i.source !== 'suggested');
+  const suggestedItems = items.filter(i => i.source === 'suggested');
+
+  el.innerHTML = `
+    <button onclick="navigate('${m.kind === 'handover' ? 'handovers' : 'meetings'}')" class="inline-flex items-center gap-1 text-sm text-surface-500 hover:text-accent transition-colors mb-4">
+      <i data-lucide="arrow-left" class="w-4 h-4"></i> Back to ${m.kind === 'handover' ? 'Handovers' : 'Meetings'}
+    </button>
+    <div class="flex items-start justify-between gap-3 mb-5">
+      <div>
+        <h1 class="text-xl font-bold">#${m.id} · ${esc(m.title)}</h1>
+        <div class="flex items-center gap-2 mt-1">
+          <span class="text-[10px] uppercase tracking-wide font-medium px-2 py-0.5 rounded-full ${m.kind === 'handover' ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400' : 'bg-surface-100 dark:bg-surface-700 text-surface-500'}">${m.kind}</span>
+          <span class="text-xs text-surface-400">${(m.participants||[]).join(', ')}</span>
+        </div>
+      </div>
+      <button onclick="openExtractModal(${m.id})" class="inline-flex items-center gap-2 bg-accent hover:bg-accent-dark text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors ${!aiEnabled ? 'opacity-50 cursor-not-allowed' : ''}" ${!aiEnabled ? 'disabled title="AI is not available"' : ''}>
+        <i data-lucide="sparkles" class="w-4 h-4"></i> AI Extract
+      </button>
+    </div>
+
+    <div class="grid lg:grid-cols-3 gap-5">
+      <!-- Left column -->
+      <div class="lg:col-span-2 space-y-5">
+        ${m.summary ? `
+        <div class="bg-white dark:bg-surface-850 rounded-xl border border-surface-200 dark:border-surface-700 p-5">
+          <h2 class="text-xs font-semibold text-surface-500 uppercase tracking-wide mb-2">AI Summary</h2>
+          <p class="text-sm leading-relaxed">${esc(m.summary)}</p>
+        </div>` : ''}
+
+        ${decisions.length ? `
+        <div class="bg-white dark:bg-surface-850 rounded-xl border border-surface-200 dark:border-surface-700 p-5">
+          <h2 class="text-xs font-semibold text-surface-500 uppercase tracking-wide mb-3">Decisions</h2>
+          <div class="space-y-2">${decisions.map(d => `
+            <div class="flex items-start gap-2">
+              <i data-lucide="check" class="w-4 h-4 text-green-500 shrink-0 mt-0.5"></i>
+              <span class="text-sm">${esc(d)}</span>
+            </div>`).join('')}
+          </div>
+        </div>` : ''}
+
+        <div class="bg-white dark:bg-surface-850 rounded-xl border border-surface-200 dark:border-surface-700 p-5">
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="text-xs font-semibold text-surface-500 uppercase tracking-wide">Action Items (${explicitItems.length})</h2>
+            <button onclick="openAddItemModal(${m.id})" class="text-xs text-accent hover:underline">+ Add item</button>
+          </div>
+          <div class="space-y-2">
+            ${explicitItems.length ? explicitItems.map(it => renderItemRow(it, true)).join('') : emptyState('No action items yet', 'list-checks')}
+          </div>
+        </div>
+
+        ${suggestedItems.length ? `
+        <div class="bg-white dark:bg-surface-850 rounded-xl border border-purple-200/50 dark:border-purple-800/30 p-5">
+          <div class="flex items-center gap-2 mb-3">
+            <i data-lucide="sparkles" class="w-4 h-4 text-purple-500"></i>
+            <h2 class="text-xs font-semibold text-purple-600 dark:text-purple-400 uppercase tracking-wide">Suggested Commitments (${suggestedItems.length})</h2>
+          </div>
+          <div class="space-y-2">
+            ${suggestedItems.map(it => `
+            <div class="flex items-start gap-3 p-3 rounded-lg bg-purple-50/50 dark:bg-purple-900/10" id="suggested-${it.id}">
+              <i data-lucide="sparkles" class="w-4 h-4 text-purple-500 shrink-0 mt-0.5"></i>
+              <div class="flex-1 min-w-0">
+                <div class="text-sm">${esc(it.description)}</div>
+                <div class="text-xs text-surface-400 mt-0.5">Owner: ${esc(it.owner)} ${it.parent_item_id ? '· Carried from #' + it.parent_item_id : ''}</div>
+              </div>
+              <button onclick="acceptSuggestion(${it.id},this)" class="shrink-0 text-xs font-medium text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 hover:bg-green-100 px-3 py-1.5 rounded-lg transition-colors">Accept</button>
+            </div>`).join('')}
+          </div>
+        </div>` : ''}
+      </div>
+
+      <!-- Right column -->
+      <div class="space-y-5">
+        ${m.agenda ? `
+        <div class="bg-white dark:bg-surface-850 rounded-xl border border-surface-200 dark:border-surface-700 p-5">
+          <h2 class="text-xs font-semibold text-surface-500 uppercase tracking-wide mb-2">Agenda</h2>
+          <p class="text-sm text-surface-500 dark:text-surface-400">${esc(m.agenda)}</p>
+        </div>` : ''}
+
+        <div class="bg-white dark:bg-surface-850 rounded-xl border border-surface-200 dark:border-surface-700 p-5">
+          <h2 class="text-xs font-semibold text-surface-500 uppercase tracking-wide mb-2">Participants</h2>
+          <div class="space-y-1.5">
+            ${(m.participants||[]).length ? (m.participants||[]).map(p => `
+            <div class="flex items-center gap-2">
+              <div class="w-6 h-6 rounded-full bg-accent/10 flex items-center justify-center text-[10px] font-bold text-accent">${esc(p[0]||'?')}</div>
+              <span class="text-sm">${esc(p)}</span>
+            </div>`).join('') : '<span class="text-xs text-surface-400">No participants listed</span>'}
+          </div>
+        </div>
+
+        ${m.raw_notes ? `
+        <div class="bg-white dark:bg-surface-850 rounded-xl border border-surface-200 dark:border-surface-700 p-5">
+          <h2 class="text-xs font-semibold text-surface-500 uppercase tracking-wide mb-2">Raw Notes</h2>
+          <p class="text-xs text-surface-400 whitespace-pre-wrap leading-relaxed">${esc(m.raw_notes)}</p>
+        </div>` : ''}
+      </div>
+    </div>`;
+  lucide.createIcons({ attrs: {}, nameAttr: 'data-lucide' });
+  document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+  document.getElementById('view-meeting-detail').classList.remove('hidden');
+  document.getElementById('topbar-title').textContent = 'Meeting Detail';
+  document.querySelectorAll('.sidebar-link').forEach(l => { l.classList.remove('active'); l.classList.add('text-surface-500', 'dark:text-surface-400'); });
+}
+
+// ── Render an item row ──
+function renderItemRow(it, showMeeting) {
+  const statusColors = { open: 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400', in_progress: 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400', closed: 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400' };
+  const col = statusColors[it.status] || statusColors.open;
+  return `
+    <div class="flex items-start gap-3 p-3 rounded-lg hover:bg-surface-50 dark:hover:bg-surface-800/50 transition-colors">
+      <div class="flex-1 min-w-0">
+        <div class="text-sm">${esc(it.description)}</div>
+        <div class="text-xs text-surface-400 mt-0.5">
+          ${esc(it.owner)}${it.due_date ? ' · Due: ' + esc(it.due_date) : ''}${it.parent_item_id ? ' · <span class="text-accent">Carried from #' + it.parent_item_id + '</span>' : ''}
+        </div>
+      </div>
+      <div class="flex items-center gap-2 shrink-0">
+        <span class="text-[10px] font-medium px-2 py-0.5 rounded-full ${col}">${it.status.replace('_', ' ')}</span>
+        <select onchange="updateItemStatus(${it.id},this.value)" class="text-[11px] bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 rounded-md px-1.5 py-1 cursor-pointer">
+          <option value="open" ${it.status==='open'?'selected':''}>Open</option>
+          <option value="in_progress" ${it.status==='in_progress'?'selected':''}>In Progress</option>
+          <option value="closed" ${it.status==='closed'?'selected':''}>Closed</option>
+        </select>
+      </div>
+    </div>`;
+}
+
+// ── Action Items View ──
+function renderItemsView() {
+  const items = getAllItems();
+  const ownerFilter = document.getElementById('owner-filter').value;
+  const owners = [...new Set(items.map(i => i.owner))].sort();
+  const sel = document.getElementById('owner-filter');
+  const prevVal = sel.value;
+  sel.innerHTML = '<option value="">All owners</option>' + owners.map(o => `<option value="${esc(o)}" ${o === prevVal ? 'selected' : ''}>${esc(o)}</option>`).join('');
+
+  let filtered = items;
+  if (currentFilter === 'suggested') filtered = items.filter(i => i.source === 'suggested');
+  else if (currentFilter !== 'all') filtered = items.filter(i => i.status === currentFilter);
+  if (ownerFilter) filtered = filtered.filter(i => i.owner === ownerFilter);
+
+  const list = document.getElementById('items-list');
+  if (!filtered.length) {
+    list.innerHTML = emptyState('No items match this filter', 'check-square');
+    lucide.createIcons({ attrs: {}, nameAttr: 'data-lucide' });
+    return;
+  }
+
+  list.innerHTML = filtered.map(it => {
+    if (it.source === 'suggested') {
+      return `
+        <div class="bg-white dark:bg-surface-850 rounded-xl border border-purple-200/50 dark:border-purple-800/30 p-4" id="suggested-${it.id}">
+          <div class="flex items-start gap-3">
+            <div class="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center shrink-0">
+              <i data-lucide="sparkles" class="w-4 h-4 text-purple-500"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="text-sm font-medium">${esc(it.description)}</div>
+              <div class="text-xs text-surface-400 mt-0.5">Owner: ${esc(it.owner)} · Meeting: ${esc(it.meeting_title || '#' + it.meeting_id)} ${it.parent_item_id ? '· Carried from #' + it.parent_item_id : ''}</div>
+              <span class="inline-flex items-center gap-1 text-[10px] font-medium text-purple-600 dark:text-purple-400 bg-purple-100 dark:bg-purple-900/40 px-2 py-0.5 rounded-full mt-1.5">
+                <i data-lucide="sparkles" class="w-2.5 h-2.5"></i> AI Suggested · Needs Review
+              </span>
+            </div>
+            <button onclick="acceptSuggestion(${it.id},this)" class="shrink-0 text-xs font-medium text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 hover:bg-green-100 px-3 py-1.5 rounded-lg transition-colors">Accept</button>
+          </div>
+        </div>`;
+    }
+    const statusColors = { open: 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400', in_progress: 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400', closed: 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400' };
+    const col = statusColors[it.status] || statusColors.open;
+    return `
+      <div class="bg-white dark:bg-surface-850 rounded-xl border border-surface-200 dark:border-surface-700 p-4">
+        <div class="flex items-start gap-3">
+          <div class="flex-1 min-w-0">
+            <div class="text-sm font-medium">${esc(it.description)}</div>
+            <div class="text-xs text-surface-400 mt-0.5">Owner: ${esc(it.owner)} · Meeting: ${esc(it.meeting_title || '#' + it.meeting_id)}${it.due_date ? ' · Due: ' + esc(it.due_date) : ''}${it.parent_item_id ? ' · <span class="text-accent">Carried from #' + it.parent_item_id + '</span>' : ''}</div>
+          </div>
+          <div class="flex items-center gap-2 shrink-0">
+            <span class="text-[10px] font-medium px-2 py-0.5 rounded-full ${col}">${it.status.replace('_', ' ')}</span>
+            <select onchange="updateItemStatus(${it.id},this.value)" class="text-[11px] bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 rounded-md px-1.5 py-1 cursor-pointer">
+              <option value="open" ${it.status==='open'?'selected':''}>Open</option>
+              <option value="in_progress" ${it.status==='in_progress'?'selected':''}>In Progress</option>
+              <option value="closed" ${it.status==='closed'?'selected':''}>Closed</option>
+            </select>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+  lucide.createIcons({ attrs: {}, nameAttr: 'data-lucide' });
+}
+
+function setItemFilter(f, btn) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => {
+    b.classList.remove('active', 'bg-accent', 'text-white', 'border-accent');
+    b.classList.add('border-surface-200', 'dark:border-surface-700', 'text-surface-500');
+  });
+  if (btn) {
+    btn.classList.add('active', 'bg-accent', 'text-white', 'border-accent');
+    btn.classList.remove('border-surface-200', 'dark:border-surface-700', 'text-surface-500');
+  }
+  renderItemsView();
+}
+
+// ── Item Status Update ──
+async function updateItemStatus(itemId, status) {
+  try {
+    await api(`/api/items/${itemId}`, { method: 'PATCH', body: JSON.stringify({ status }) });
+    toast('Status updated');
+    await loadAllData();
+    if (currentView === 'items') renderItemsView();
+    else if (currentView === 'dashboard') refreshDashboard();
+    else if (currentView === 'meeting-detail') {
+      const m = allMeetings.find(x => (x.action_items||[]).some(i => i.id === itemId));
+      if (m) openMeetingDetail(m.id);
+    }
+  } catch(e) { toast('Error: ' + e.message, 'error'); }
+}
+
+// ── Accept Suggestion (UI only) ──
+function acceptSuggestion(itemId, btn) {
+  const card = document.getElementById('suggested-' + itemId);
+  if (card) {
+    card.classList.remove('border-purple-200/50', 'dark:border-purple-800/30');
+    card.classList.add('border-green-200', 'dark:border-green-800/30');
+    card.style.opacity = '0.6';
+  }
+  if (btn) { btn.textContent = 'Accepted'; btn.disabled = true; btn.classList.add('opacity-50'); }
+  toast('Commitment accepted');
+}
+
+// ── New Meeting Modal ──
+function openNewMeetingModal(defaultKind) {
+  const body = `
+    <div class="space-y-3">
+      <div>
+        <label class="block text-xs font-medium text-surface-500 dark:text-surface-400 mb-1">Title <span class="text-red-500">*</span></label>
+        <input id="modal-m-title" class="w-full bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 rounded-lg px-3 py-2 text-sm" placeholder="Weekly sync — 30 Oct">
+        <p id="modal-m-title-err" class="text-xs text-red-500 mt-0.5 hidden"></p>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-medium text-surface-500 dark:text-surface-400 mb-1">Type</label>
+          <select id="modal-m-kind" class="w-full bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 rounded-lg px-3 py-2 text-sm">
+            <option value="meeting" ${defaultKind !== 'handover' ? 'selected' : ''}>Meeting</option>
+            <option value="handover" ${defaultKind === 'handover' ? 'selected' : ''}>Handover</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-surface-500 dark:text-surface-400 mb-1">Carry from meeting ID</label>
+          <input id="modal-m-carry" type="number" class="w-full bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 rounded-lg px-3 py-2 text-sm" placeholder="e.g. 1">
+        </div>
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-surface-500 dark:text-surface-400 mb-1">Participants (comma separated)</label>
+        <input id="modal-m-parts" class="w-full bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 rounded-lg px-3 py-2 text-sm" placeholder="Rahul, Priya, Sam">
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-surface-500 dark:text-surface-400 mb-1">Agenda</label>
+        <input id="modal-m-agenda" class="w-full bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 rounded-lg px-3 py-2 text-sm" placeholder="Pricing, roadmap, hiring">
+      </div>
+      <div class="flex justify-end gap-2 pt-2">
+        <button onclick="closeModal()" class="text-sm font-medium text-surface-500 hover:text-surface-700 px-4 py-2 rounded-lg transition-colors">Cancel</button>
+        <button onclick="submitNewMeeting()" id="modal-m-submit" class="inline-flex items-center gap-2 bg-accent hover:bg-accent-dark text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
+          <i data-lucide="plus" class="w-4 h-4"></i> Create
+        </button>
+      </div>
+    </div>`;
+  openModal('New Meeting / Handover', body);
+}
+
+async function submitNewMeeting() {
+  const title = document.getElementById('modal-m-title').value.trim();
+  const errEl = document.getElementById('modal-m-title-err');
+  if (!title) { errEl.textContent = 'Title is required'; errEl.classList.remove('hidden'); return; }
+  errEl.classList.add('hidden');
+
+  const btn = document.getElementById('modal-m-submit');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Creating…';
+
+  const parts = document.getElementById('modal-m-parts').value.split(',').map(s => s.trim()).filter(Boolean);
   const body = {
-    title: document.getElementById("m-title").value,
-    kind: document.getElementById("m-kind").value,
+    title,
+    kind: document.getElementById('modal-m-kind').value,
     participants: parts,
-    agenda: document.getElementById("m-agenda").value
+    agenda: document.getElementById('modal-m-agenda').value
   };
-  const carry = document.getElementById("m-carry").value;
-  let path = "/api/meetings";
-  if(carry) path += "?carry_from="+encodeURIComponent(carry);
-  try{
-    const m = await api(path, {method:"POST", body:JSON.stringify(body)});
-    document.getElementById("e-mid").value = m.id;
-    alert("Created meeting #"+m.id);
-    loadMeetings();
-  }catch(e){ alert("Error: "+e.message); }
+  const carry = document.getElementById('modal-m-carry').value;
+  let path = '/api/meetings';
+  if (carry) path += '?carry_from=' + encodeURIComponent(carry);
+
+  try {
+    const m = await api(path, { method: 'POST', body: JSON.stringify(body) });
+    toast('Meeting #' + m.id + ' created');
+    closeModal();
+    await loadAllData();
+    openMeetingDetail(m.id);
+  } catch(e) {
+    toast('Error: ' + e.message, 'error');
+    btn.disabled = false;
+    btn.innerHTML = '<i data-lucide="plus" class="w-4 h-4"></i> Create';
+    lucide.createIcons({ attrs: {}, nameAttr: 'data-lucide' });
+  }
 }
 
-async function extract(){
-  const mid = document.getElementById("e-mid").value;
-  const raw = document.getElementById("e-raw").value;
-  if(!mid){ alert("Enter a meeting ID first (create a meeting above)."); return; }
-  const s = document.getElementById("e-status");
-  s.textContent = "Running AI… (extraction + second-pass commitment catcher)";
-  try{
-    await api(`/api/meetings/${mid}/extract`, {method:"POST", body:JSON.stringify({raw_text:raw})});
-    s.textContent = "Done ✓ — see results below.";
-    loadMeetings();
-  }catch(e){ s.textContent = "Error: "+e.message; }
+// ── Extract Modal ──
+function openExtractModal(meetingId) {
+  const body = `
+    <div class="space-y-3">
+      <p class="text-sm text-surface-500 dark:text-surface-400">Paste raw meeting notes, chat logs, or email dumps. AI will extract a structured recap, decisions, action items, and detect implied commitments.</p>
+      <div>
+        <label class="block text-xs font-medium text-surface-500 dark:text-surface-400 mb-1">Raw Notes <span class="text-red-500">*</span></label>
+        <textarea id="modal-e-raw" class="w-full bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 rounded-lg px-3 py-2 text-sm min-h-[120px]" placeholder="discussed pricing. Rahul will send revised quote by Friday..."></textarea>
+        <p id="modal-e-raw-err" class="text-xs text-red-500 mt-0.5 hidden"></p>
+      </div>
+      <div class="flex justify-end gap-2 pt-2">
+        <button onclick="closeModal()" class="text-sm font-medium text-surface-500 hover:text-surface-700 px-4 py-2 rounded-lg transition-colors">Cancel</button>
+        <button onclick="submitExtract(${meetingId})" id="modal-e-submit" class="inline-flex items-center gap-2 bg-accent hover:bg-accent-dark text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
+          <i data-lucide="sparkles" class="w-4 h-4"></i> Run AI Extraction
+        </button>
+      </div>
+    </div>`;
+  openModal('AI Extraction + Commitment Catcher', body, { wide: true });
 }
 
-async function updateStatus(itemId, status){
-  try{ await api(`/api/items/${itemId}`, {method:"PATCH", body:JSON.stringify({status})}); loadMeetings(); }
-  catch(e){ alert("Error: "+e.message); }
-}
-async function acceptSuggestion(itemId){
-  // accepting = just flip it to a normal open item by setting status open (source stays, but it's now tracked)
-  // here we simply reassign to confirm; simplest: patch owner unchanged -> it's already open, so we mark via outcome cleared
-  loadMeetings();
+async function submitExtract(meetingId) {
+  const raw = document.getElementById('modal-e-raw').value.trim();
+  const errEl = document.getElementById('modal-e-raw-err');
+  if (!raw) { errEl.textContent = 'Notes are required'; errEl.classList.remove('hidden'); return; }
+  errEl.classList.add('hidden');
+
+  const btn = document.getElementById('modal-e-submit');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Extracting…';
+
+  try {
+    await api(`/api/meetings/${meetingId}/extract`, { method: 'POST', body: JSON.stringify({ raw_text: raw }) });
+    toast('Extraction complete');
+    closeModal();
+    await loadAllData();
+    openMeetingDetail(meetingId);
+  } catch(e) {
+    toast('Error: ' + e.message, 'error');
+    btn.disabled = false;
+    btn.innerHTML = '<i data-lucide="sparkles" class="w-4 h-4"></i> Run AI Extraction';
+    lucide.createIcons({ attrs: {}, nameAttr: 'data-lucide' });
+  }
 }
 
-async function loadMeetings(){
-  const box = document.getElementById("meetings");
-  try{
-    const meetings = await api("/api/meetings");
-    if(!meetings.length){ box.innerHTML = '<div class="muted">No meetings yet.</div>'; return; }
-    box.innerHTML = meetings.map(renderMeeting).join("");
-  }catch(e){ box.innerHTML = '<div class="muted">Error: '+e.message+'</div>'; }
+// ── Add Item Modal ──
+function openAddItemModal(meetingId) {
+  const body = `
+    <div class="space-y-3">
+      <div>
+        <label class="block text-xs font-medium text-surface-500 dark:text-surface-400 mb-1">Description <span class="text-red-500">*</span></label>
+        <input id="modal-i-desc" class="w-full bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 rounded-lg px-3 py-2 text-sm" placeholder="What needs doing">
+        <p id="modal-i-desc-err" class="text-xs text-red-500 mt-0.5 hidden"></p>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-medium text-surface-500 dark:text-surface-400 mb-1">Owner</label>
+          <input id="modal-i-owner" class="w-full bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 rounded-lg px-3 py-2 text-sm" placeholder="Unassigned" value="Unassigned">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-surface-500 dark:text-surface-400 mb-1">Due date</label>
+          <input id="modal-i-due" class="w-full bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 rounded-lg px-3 py-2 text-sm" placeholder="Friday">
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 pt-2">
+        <button onclick="closeModal()" class="text-sm font-medium text-surface-500 hover:text-surface-700 px-4 py-2 rounded-lg transition-colors">Cancel</button>
+        <button onclick="submitAddItem(${meetingId})" id="modal-i-submit" class="inline-flex items-center gap-2 bg-accent hover:bg-accent-dark text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
+          <i data-lucide="plus" class="w-4 h-4"></i> Add Item
+        </button>
+      </div>
+    </div>`;
+  openModal('Add Action Item', body);
 }
 
-function renderMeeting(m){
-  const decisions = (m.decisions||[]).length
-    ? `<div class="decisions"><b>Decisions:</b><ul>${m.decisions.map(d=>`<li>${esc(d)}</li>`).join("")}</ul></div>` : "";
-  const items = (m.action_items||[]).map(renderItem).join("") || '<div class="muted" style="padding-top:6px">No action items.</div>';
-  return `<div class="meeting">
-    <div class="top">
-      <div><b>#${m.id} · ${esc(m.title)}</b> <span class="kind">${m.kind}</span></div>
-      <span class="muted">${(m.participants||[]).join(", ")}</span>
-    </div>
-    ${m.summary?`<div class="summary">${esc(m.summary)}</div>`:""}
-    ${decisions}
-    ${items}
-  </div>`;
+async function submitAddItem(meetingId) {
+  const desc = document.getElementById('modal-i-desc').value.trim();
+  const errEl = document.getElementById('modal-i-desc-err');
+  if (!desc) { errEl.textContent = 'Description is required'; errEl.classList.remove('hidden'); return; }
+  errEl.classList.add('hidden');
+
+  const btn = document.getElementById('modal-i-submit');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Adding…';
+
+  try {
+    await api(`/api/meetings/${meetingId}/items`, { method: 'POST', body: JSON.stringify({
+      description: desc,
+      owner: document.getElementById('modal-i-owner').value.trim() || 'Unassigned',
+      due_date: document.getElementById('modal-i-due').value.trim()
+    })});
+    toast('Item added');
+    closeModal();
+    await loadAllData();
+    openMeetingDetail(meetingId);
+  } catch(e) {
+    toast('Error: ' + e.message, 'error');
+    btn.disabled = false;
+    btn.innerHTML = '<i data-lucide="plus" class="w-4 h-4"></i> Add Item';
+    lucide.createIcons({ attrs: {}, nameAttr: 'data-lucide' });
+  }
 }
 
-function renderItem(it){
-  const isSuggested = it.source === "suggested";
-  const badge = isSuggested
-    ? `<span class="badge b-suggested">suggested</span>`
-    : `<span class="badge b-${it.status}">${it.status}</span>`;
-  const statusSel = !isSuggested ? `
-    <select class="status-sel" onchange="updateStatus(${it.id}, this.value)">
-      <option ${it.status==='open'?'selected':''}>open</option>
-      <option value="in_progress" ${it.status==='in_progress'?'selected':''}>in_progress</option>
-      <option value="closed" ${it.status==='closed'?'selected':''}>closed</option>
-    </select>` : `<button class="ghost" onclick="updateStatus(${it.id},'open')">accept</button>`;
-  return `<div class="item">
-    <div class="desc">
-      ${esc(it.description)}
-      <div class="owner">owner: ${esc(it.owner)} ${it.due_date?("· due "+esc(it.due_date)):""} ${it.parent_item_id?("· carried from #"+it.parent_item_id):""}</div>
-      ${isSuggested?'<div class="suggest-note">⚡ Commitment Catcher: implied promise — review</div>':''}
-    </div>
-    ${badge}
-    ${statusSel}
-  </div>`;
+// ── Catch-up Brief ──
+async function generateBrief() {
+  const person = document.getElementById('brief-person').value.trim();
+  if (!person) { toast('Enter a person name', 'error'); return; }
+  const btn = document.getElementById('brief-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Generating…';
+  try {
+    const r = await api(`/api/brief/${encodeURIComponent(person)}`);
+    document.getElementById('brief-count').textContent = r.open_item_count;
+    document.getElementById('brief-text').textContent = r.brief;
+    document.getElementById('brief-result').classList.remove('hidden');
+  } catch(e) { toast('Error: ' + e.message, 'error'); }
+  btn.disabled = false;
+  btn.innerHTML = '<i data-lucide="sparkles" class="w-4 h-4"></i> Generate';
+  lucide.createIcons({ attrs: {}, nameAttr: 'data-lucide' });
 }
 
-async function getBrief(){
-  const p = document.getElementById("b-person").value.trim();
-  if(!p){ alert("Enter a person name"); return; }
-  const out = document.getElementById("b-out");
-  out.textContent = "Generating…";
-  try{ const r = await api(`/api/brief/${encodeURIComponent(p)}`); out.textContent = r.brief; }
-  catch(e){ out.textContent = "Error: "+e.message; }
+function copyBrief() {
+  const text = document.getElementById('brief-text').textContent;
+  navigator.clipboard.writeText(text).then(() => toast('Copied to clipboard')).catch(() => toast('Copy failed', 'error'));
 }
 
-async function addKnowledge(){
-  const body = {title:document.getElementById("k-title").value, content:document.getElementById("k-content").value};
-  try{ const r = await api("/api/knowledge",{method:"POST",body:JSON.stringify(body)}); alert("Added doc #"+r.id); }
-  catch(e){ alert("Error: "+e.message); }
-}
-async function linkKnowledge(){
-  const q = document.getElementById("k-query").value.trim();
-  const out = document.getElementById("k-out");
-  if(!q){ alert("Enter a query"); return; }
-  out.textContent="Searching…";
-  try{
-    const r = await api("/api/knowledge/link?q="+encodeURIComponent(q));
-    out.textContent = r.related.length
-      ? r.related.map(d=>`• ${d.title}  (score ${d.score}, via ${d.method})`).join("\n")
-      : "No related documents found.";
-  }catch(e){ out.textContent="Error: "+e.message; }
+// ── Knowledge Base ──
+async function addKnowledge() {
+  const title = document.getElementById('kb-title').value.trim();
+  const content = document.getElementById('kb-content').value.trim();
+  if (!title) { toast('Title is required', 'error'); return; }
+  try {
+    const r = await api('/api/knowledge', { method: 'POST', body: JSON.stringify({ title, content }) });
+    toast('Document #' + r.id + ' added');
+    document.getElementById('kb-title').value = '';
+    document.getElementById('kb-content').value = '';
+    loadKnowledge();
+  } catch(e) { toast('Error: ' + e.message, 'error'); }
 }
 
-function esc(s){ return (s||"").replace(/[&<>]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c])); }
+async function loadKnowledge() {
+  const list = document.getElementById('kb-list');
+  try {
+    const docs = await api('/api/knowledge');
+    if (!docs.length) { list.innerHTML = emptyState('No documents yet', 'book-open'); lucide.createIcons({ attrs: {}, nameAttr: 'data-lucide' }); return; }
+    list.innerHTML = docs.map(d => `
+      <div class="p-3 rounded-lg bg-surface-50 dark:bg-surface-900 border border-surface-200/50 dark:border-surface-700/50">
+        <div class="text-sm font-medium">${esc(d.title)}</div>
+        ${d.content ? `<p class="text-xs text-surface-400 mt-1 line-clamp-2">${esc(d.content)}</p>` : ''}
+      </div>`).join('');
+  } catch(e) { list.innerHTML = `<div class="text-xs text-red-500">Error: ${esc(e.message)}</div>`; }
+}
 
-checkHealth();
-loadMeetings();
+async function searchKnowledge() {
+  const q = document.getElementById('kb-query').value.trim();
+  if (!q) { toast('Enter a search query', 'error'); return; }
+  const results = document.getElementById('kb-results');
+  results.innerHTML = '<div class="text-xs text-surface-400">Searching…</div>';
+  try {
+    const r = await api('/api/knowledge/link?q=' + encodeURIComponent(q));
+    if (!r.related.length) { results.innerHTML = emptyState('No related documents found', 'search'); lucide.createIcons({ attrs: {}, nameAttr: 'data-lucide' }); return; }
+    results.innerHTML = r.related.map(d => `
+      <div class="flex items-center gap-2 p-2 rounded-lg bg-surface-50 dark:bg-surface-900">
+        <i data-lucide="file-text" class="w-4 h-4 text-accent shrink-0"></i>
+        <div class="flex-1 min-w-0">
+          <div class="text-sm font-medium">${esc(d.title)}</div>
+          <div class="text-[10px] text-surface-400">Score: ${d.score} · Method: ${d.method}</div>
+        </div>
+      </div>`).join('');
+    lucide.createIcons({ attrs: {}, nameAttr: 'data-lucide' });
+  } catch(e) { results.innerHTML = `<div class="text-xs text-red-500">Error: ${esc(e.message)}</div>`; }
+}
+
+// ── Helpers ──
+function esc(s) { return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+function emptyState(msg, icon) {
+  return `<div class="text-center py-8"><i data-lucide="${icon}" class="w-8 h-8 mx-auto text-surface-300 dark:text-surface-600 mb-2"></i><p class="text-sm text-surface-400">${msg}</p></div>`;
+}
+
+// ── Init ──
+async function init() {
+  await checkHealth();
+  await loadAllData();
+  refreshDashboard();
+  // set initial filter button active state
+  const activeBtn = document.querySelector('.filter-btn[data-filter="all"]');
+  if (activeBtn) { activeBtn.classList.add('bg-accent', 'text-white', 'border-accent'); activeBtn.classList.remove('border-surface-200', 'dark:border-surface-700', 'text-surface-500'); }
+  lucide.createIcons({ attrs: {}, nameAttr: 'data-lucide' });
+}
+init();
 </script>
 </body>
 </html>
