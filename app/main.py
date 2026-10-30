@@ -17,6 +17,7 @@ import logging
 import time
 
 from fastapi import FastAPI, Depends, File, Form, HTTPException, Request, UploadFile
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
@@ -29,6 +30,35 @@ from .logging_config import logger, log_event, correlation_id_ctx, new_correlati
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="AI-Powered Knowledge & Tasks Management Platform")
+
+
+# ---------------------------------------------------------------------------
+# Global exception handlers — every error returns {detail, correlation_id}
+# ---------------------------------------------------------------------------
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    cid = correlation_id_ctx.get()
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail, "correlation_id": cid},
+        headers={"X-Correlation-ID": cid},
+    )
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    cid = correlation_id_ctx.get()
+    parts = []
+    for err in exc.errors():
+        field = " → ".join(str(l) for l in err.get("loc", []) if l != "body")
+        msg = err.get("msg", "invalid")
+        parts.append(f"{field}: {msg}" if field else msg)
+    readable = "; ".join(parts) or "Validation error"
+    return JSONResponse(
+        status_code=422,
+        content={"detail": readable, "correlation_id": cid},
+        headers={"X-Correlation-ID": cid},
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -64,7 +94,15 @@ async def correlation_and_logging(request: Request, call_next):
 # ---------------------------------------------------------------------------
 @app.get("/api/health")
 def health():
-    return {"status": "ok", "ai_enabled": ai.AI_ENABLED}
+    result = {"status": "ok", "ai_enabled": ai.AI_ENABLED}
+    if not ai.AI_ENABLED:
+        if not ai.GROQ_API_KEY:
+            result["ai_reason"] = "No GROQ_API_KEY configured"
+        elif not ai._selected_model:
+            result["ai_reason"] = "No suitable Groq model found"
+        else:
+            result["ai_reason"] = "AI initialization failed"
+    return result
 
 
 # ---------------------------------------------------------------------------
@@ -130,7 +168,7 @@ def extract_text_from_file(filename: str, content: bytes) -> str:
     return ""
 
 
-@app.post("/api/meetings/upload", response_model=schemas.MeetingOut)
+@app.post("/api/meetings/upload")
 async def upload_meeting(
     title: str = Form(...),
     kind: str = Form("meeting"),
@@ -181,10 +219,14 @@ async def upload_meeting(
                 s["owner"] = assignee
 
     meeting = crud.apply_recap_to_meeting(db, meeting, raw_text, recap, suggestions)
-    return meeting
+    meeting_data = schemas.MeetingOut.model_validate(meeting).model_dump()
+    ai_used = recap.get("ai_used", False)
+    meeting_data["ai_used"] = ai_used
+    meeting_data["ai_message"] = "AI extraction succeeded" if ai_used else "AI unavailable — used basic keyword extraction"
+    return meeting_data
 
 
-@app.post("/api/meetings/{meeting_id}/extract", response_model=schemas.MeetingOut)
+@app.post("/api/meetings/{meeting_id}/extract")
 def extract_into_meeting(meeting_id: int, payload: schemas.ExtractRequest,
                          db: Session = Depends(get_db)):
     """
@@ -200,7 +242,11 @@ def extract_into_meeting(meeting_id: int, payload: schemas.ExtractRequest,
     suggestions = ai.catch_commitments(payload.raw_text, explicit_descriptions)
 
     meeting = crud.apply_recap_to_meeting(db, meeting, payload.raw_text, recap, suggestions)
-    return meeting
+    meeting_data = schemas.MeetingOut.model_validate(meeting).model_dump()
+    ai_used = recap.get("ai_used", False)
+    meeting_data["ai_used"] = ai_used
+    meeting_data["ai_message"] = "AI extraction succeeded" if ai_used else "AI unavailable — used basic keyword extraction"
+    return meeting_data
 
 
 # ---------------------------------------------------------------------------

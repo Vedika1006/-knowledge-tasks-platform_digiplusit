@@ -328,6 +328,7 @@ tailwind.config = {
 // ── State ──
 let allMeetings = [];
 let aiEnabled = false;
+let aiReason = '';
 let currentFilter = 'all';
 let currentView = 'dashboard';
 
@@ -335,20 +336,38 @@ let currentView = 'dashboard';
 async function api(path, opts = {}) {
   const res = await fetch(path, { headers: { 'Content-Type': 'application/json' }, ...opts });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.detail || 'HTTP ' + res.status);
+  if (!res.ok) {
+    const cid = data.correlation_id || res.headers.get('X-Correlation-ID') || '';
+    const detail = data.detail || 'HTTP ' + res.status;
+    const msg = cid ? `${detail}  (ref: ${cid})` : detail;
+    throw new Error(msg);
+  }
+  return data;
+}
+
+async function apiFetch(path, opts = {}) {
+  const res = await fetch(path, opts);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const cid = data.correlation_id || res.headers.get('X-Correlation-ID') || '';
+    const detail = data.detail || 'HTTP ' + res.status;
+    const msg = cid ? `${detail}  (ref: ${cid})` : detail;
+    throw new Error(msg);
+  }
   return data;
 }
 
 // ── Toast ──
 function toast(msg, type = 'success') {
   const el = document.createElement('div');
-  const colors = { success: 'bg-green-600', error: 'bg-red-600', info: 'bg-accent' };
-  const icons = { success: 'check-circle-2', error: 'alert-circle', info: 'info' };
-  el.className = `toast-enter pointer-events-auto flex items-center gap-2 px-4 py-2.5 rounded-lg text-white text-sm font-medium shadow-lg ${colors[type] || colors.info}`;
-  el.innerHTML = `<i data-lucide="${icons[type] || icons.info}" class="w-4 h-4"></i> ${esc(msg)}`;
+  const colors = { success: 'bg-green-600', error: 'bg-red-600', info: 'bg-accent', warning: 'bg-amber-500' };
+  const icons = { success: 'check-circle-2', error: 'alert-circle', info: 'info', warning: 'alert-triangle' };
+  const duration = type === 'warning' ? 5000 : 3000;
+  el.className = `toast-enter pointer-events-auto flex items-start gap-2 px-4 py-2.5 rounded-lg text-white text-sm font-medium shadow-lg max-w-md ${colors[type] || colors.info}`;
+  el.innerHTML = `<i data-lucide="${icons[type] || icons.info}" class="w-4 h-4 shrink-0 mt-0.5"></i> <span>${esc(msg)}</span>`;
   document.getElementById('toasts').appendChild(el);
   lucide.createIcons({ attrs: {}, nameAttr: 'data-lucide' });
-  setTimeout(() => { el.classList.replace('toast-enter', 'toast-exit'); setTimeout(() => el.remove(), 300); }, 3000);
+  setTimeout(() => { el.classList.replace('toast-enter', 'toast-exit'); setTimeout(() => el.remove(), 300); }, duration);
 }
 
 // ── Modal ──
@@ -422,13 +441,23 @@ async function checkHealth() {
   try {
     const h = await api('/api/health');
     aiEnabled = h.ai_enabled;
+    aiReason = h.ai_reason || '';
     const dot = document.getElementById('ai-dot');
     const text = document.getElementById('ai-status-text');
+    const wrap = dot.parentElement;
     dot.className = 'w-2 h-2 rounded-full ' + (aiEnabled ? 'bg-green-500' : 'bg-amber-500');
     text.textContent = aiEnabled ? 'AI Online (Groq)' : 'AI Off — Fallback Mode';
+    if (!aiEnabled && aiReason) {
+      wrap.title = 'AI offline — ' + aiReason;
+      wrap.classList.add('cursor-help');
+    } else {
+      wrap.title = '';
+      wrap.classList.remove('cursor-help');
+    }
   } catch(e) {
     document.getElementById('ai-dot').className = 'w-2 h-2 rounded-full bg-red-500';
     document.getElementById('ai-status-text').textContent = 'Backend unreachable';
+    document.getElementById('ai-dot').parentElement.title = 'Could not reach the backend server';
   }
 }
 
@@ -917,11 +946,12 @@ async function submitMeetingOrHandover(kind) {
       if (handoverFrom) fd.append('handover_from', handoverFrom);
       if (handoverTo) fd.append('handover_to', handoverTo);
       fd.append('file', file);
-      const res = await fetch('/api/meetings/upload', { method: 'POST', body: fd });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.detail || 'HTTP ' + res.status);
-      m = data;
-      toast(kind === 'handover' ? 'Handover created with AI extraction' : 'Meeting created with AI extraction');
+      m = await apiFetch('/api/meetings/upload', { method: 'POST', body: fd });
+      if (m.ai_used === false) {
+        toast('AI service was unavailable — showed basic extraction instead', 'warning');
+      } else {
+        toast(m.ai_message || (kind === 'handover' ? 'Handover created with AI extraction' : 'Meeting created with AI extraction'));
+      }
     } else {
       const body = { title, kind, participants: parts.split(',').map(s=>s.trim()).filter(Boolean), agenda };
       if (kind === 'handover') { body.handover_from = handoverFrom || null; body.handover_to = handoverTo || null; }
@@ -972,8 +1002,12 @@ async function submitExtract(meetingId) {
   btn.innerHTML = '<span class="spinner"></span> Extracting…';
 
   try {
-    await api(`/api/meetings/${meetingId}/extract`, { method: 'POST', body: JSON.stringify({ raw_text: raw }) });
-    toast('Extraction complete');
+    const result = await api(`/api/meetings/${meetingId}/extract`, { method: 'POST', body: JSON.stringify({ raw_text: raw }) });
+    if (result.ai_used === false) {
+      toast('AI service was unavailable — showed basic extraction instead', 'warning');
+    } else {
+      toast(result.ai_message || 'Extraction complete');
+    }
     closeModal();
     await loadAllData();
     openMeetingDetail(meetingId);
