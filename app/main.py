@@ -12,10 +12,11 @@ How a request flows (end to end):
   back  ->  middleware logs finish with status + latency.
 """
 
+import io
 import logging
 import time
 
-from fastapi import FastAPI, Depends, HTTPException, Request
+from fastapi import FastAPI, Depends, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
@@ -78,7 +79,8 @@ def create_meeting(payload: schemas.MeetingCreate,
     all still-open items from that meeting are carried forward into this one.
     """
     meeting = crud.create_meeting(db, payload.title, payload.kind,
-                                  payload.participants, payload.agenda)
+                                  payload.participants, payload.agenda,
+                                  payload.handover_from, payload.handover_to)
     if carry_from is not None:
         prev = crud.get_meeting(db, carry_from)
         if not prev:
@@ -98,6 +100,87 @@ def get_meeting(meeting_id: int, db: Session = Depends(get_db)):
     meeting = crud.get_meeting(db, meeting_id)
     if not meeting:
         raise HTTPException(status_code=404, detail="Meeting not found")
+    return meeting
+
+
+ALLOWED_UPLOAD_EXTENSIONS = {".txt", ".md", ".docx", ".pdf"}
+
+
+def extract_text_from_file(filename: str, content: bytes) -> str:
+    """Turn an uploaded file into plain text. Raises ValueError on failure."""
+    import os
+    ext = os.path.splitext(filename)[1].lower()
+    if ext not in ALLOWED_UPLOAD_EXTENSIONS:
+        raise ValueError(f"Unsupported file type '{ext}'. Accepted: {', '.join(ALLOWED_UPLOAD_EXTENSIONS)}")
+    try:
+        if ext in (".txt", ".md"):
+            return content.decode("utf-8", errors="replace")
+        elif ext == ".docx":
+            from docx import Document
+            doc = Document(io.BytesIO(content))
+            return "\n".join(p.text for p in doc.paragraphs if p.text.strip())
+        elif ext == ".pdf":
+            from pypdf import PdfReader
+            reader = PdfReader(io.BytesIO(content))
+            return "\n".join(page.extract_text() or "" for page in reader.pages)
+    except Exception as exc:
+        log_event(logging.ERROR, "file text extraction failed", type="upload.parse_error",
+                  filename=filename, error=str(exc))
+        raise ValueError(f"Could not parse '{filename}': {exc}")
+    return ""
+
+
+@app.post("/api/meetings/upload", response_model=schemas.MeetingOut)
+async def upload_meeting(
+    title: str = Form(...),
+    kind: str = Form("meeting"),
+    participants: str = Form(""),
+    agenda: str = Form(""),
+    handover_from: str = Form(None),
+    handover_to: str = Form(None),
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+):
+    """Create a meeting/handover from an uploaded transcript file in one call."""
+    if kind not in ("meeting", "handover"):
+        raise HTTPException(status_code=400, detail="kind must be 'meeting' or 'handover'")
+    if not title.strip():
+        raise HTTPException(status_code=400, detail="title is required")
+
+    file_content = await file.read()
+    log_event(logging.INFO, "file uploaded", type="upload.received",
+              filename=file.filename, size_bytes=len(file_content),
+              content_type=file.content_type)
+
+    try:
+        raw_text = extract_text_from_file(file.filename or "upload.txt", file_content)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+    if not raw_text.strip():
+        raise HTTPException(status_code=400, detail="Uploaded file is empty or could not be read")
+
+    parts = [p.strip() for p in participants.split(",") if p.strip()]
+    meeting = crud.create_meeting(
+        db, title.strip(), kind, parts, agenda,
+        handover_from=handover_from or None,
+        handover_to=handover_to or None,
+    )
+
+    recap = ai.extract_recap(raw_text)
+    explicit_descriptions = [a["description"] for a in recap.get("action_items", [])]
+    suggestions = ai.catch_commitments(raw_text, explicit_descriptions)
+
+    if kind == "handover" and handover_to:
+        assignee = handover_to.strip()
+        for a in recap.get("action_items", []):
+            if not a.get("owner") or a["owner"] == "Unassigned":
+                a["owner"] = assignee
+        for s in suggestions:
+            if not s.get("owner") or s["owner"] == "Unassigned":
+                s["owner"] = assignee
+
+    meeting = crud.apply_recap_to_meeting(db, meeting, raw_text, recap, suggestions)
     return meeting
 
 

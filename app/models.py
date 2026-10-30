@@ -43,6 +43,9 @@ class Meeting(Base):
     # participants stored as a JSON list of names, e.g. ["Rahul", "Priya"]
     participants = Column(JSON, nullable=False, default=list)
     agenda = Column(Text, default="")
+    # handover-specific: who is handing work over, and to whom
+    handover_from = Column(String(120), nullable=True)
+    handover_to = Column(String(120), nullable=True)
     # the original messy text the user pasted in
     raw_notes = Column(Text, default="")
     # AI-generated outputs

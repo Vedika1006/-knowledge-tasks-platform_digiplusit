@@ -125,9 +125,14 @@ tailwind.config = {
             <h1 class="text-xl font-bold">Welcome back</h1>
             <p class="text-sm text-surface-500 dark:text-surface-400 mt-0.5">Here's what's happening across your meetings and tasks.</p>
           </div>
-          <button onclick="openNewMeetingModal()" class="inline-flex items-center gap-2 bg-accent hover:bg-accent-dark text-white text-sm font-semibold px-4 py-2.5 rounded-lg transition-colors shadow-sm">
-            <i data-lucide="plus" class="w-4 h-4"></i> New Meeting
-          </button>
+          <div class="flex gap-2">
+            <button onclick="openNewMeetingModal()" class="inline-flex items-center gap-2 bg-accent hover:bg-accent-dark text-white text-sm font-semibold px-4 py-2.5 rounded-lg transition-colors shadow-sm">
+              <i data-lucide="plus" class="w-4 h-4"></i> New Meeting
+            </button>
+            <button onclick="openNewHandoverModal()" class="inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold px-4 py-2.5 rounded-lg transition-colors shadow-sm">
+              <i data-lucide="arrow-right-left" class="w-4 h-4"></i> New Handover
+            </button>
+          </div>
         </div>
 
         <!-- KPI Cards -->
@@ -238,8 +243,8 @@ tailwind.config = {
       <div id="view-handovers" class="view hidden">
         <div class="mb-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <h1 class="text-xl font-bold">Handovers</h1>
-          <button onclick="openNewMeetingModal('handover')" class="inline-flex items-center gap-2 bg-accent hover:bg-accent-dark text-white text-sm font-semibold px-4 py-2.5 rounded-lg transition-colors shadow-sm">
-            <i data-lucide="plus" class="w-4 h-4"></i> New Handover
+          <button onclick="openNewHandoverModal()" class="inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold px-4 py-2.5 rounded-lg transition-colors shadow-sm">
+            <i data-lucide="arrow-right-left" class="w-4 h-4"></i> New Handover
           </button>
         </div>
         <div id="handovers-list" class="space-y-3"></div>
@@ -537,9 +542,11 @@ function renderMeetingCard(m) {
             <span class="text-[10px] uppercase tracking-wide font-medium px-2 py-0.5 rounded-full ${m.kind === 'handover' ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400' : 'bg-surface-100 dark:bg-surface-700 text-surface-500'}">${m.kind}</span>
           </div>
           ${m.summary ? `<p class="text-sm text-surface-500 dark:text-surface-400 line-clamp-2">${esc(m.summary)}</p>` : ''}
-          <div class="flex items-center gap-3 mt-2 text-xs text-surface-400">
+          <div class="flex flex-wrap items-center gap-3 mt-2 text-xs text-surface-400">
             <span class="inline-flex items-center gap-1"><i data-lucide="users" class="w-3 h-3"></i> ${(m.participants||[]).join(', ') || 'None'}</span>
             <span class="inline-flex items-center gap-1"><i data-lucide="list-checks" class="w-3 h-3"></i> ${itemCount} items (${openCount} open)</span>
+            ${m.handover_from ? `<span class="inline-flex items-center gap-1"><i data-lucide="user-minus" class="w-3 h-3"></i> From: ${esc(m.handover_from)}</span>` : ''}
+            ${m.handover_to ? `<span class="inline-flex items-center gap-1"><i data-lucide="user-plus" class="w-3 h-3"></i> To: ${esc(m.handover_to)}</span>` : ''}
           </div>
         </div>
         <i data-lucide="chevron-right" class="w-4 h-4 text-surface-300 dark:text-surface-600 shrink-0 mt-1"></i>
@@ -627,6 +634,15 @@ function openMeetingDetail(id, event) {
 
       <!-- Right column -->
       <div class="space-y-5">
+        ${m.kind === 'handover' && (m.handover_from || m.handover_to) ? `
+        <div class="bg-white dark:bg-surface-850 rounded-xl border border-purple-200/50 dark:border-purple-800/30 p-5">
+          <h2 class="text-xs font-semibold text-purple-600 dark:text-purple-400 uppercase tracking-wide mb-3">Handover Details</h2>
+          <div class="space-y-2">
+            ${m.handover_from ? `<div class="flex items-center gap-2 text-sm"><i data-lucide="user-minus" class="w-4 h-4 text-surface-400"></i> <span class="text-surface-500">From:</span> <span class="font-medium">${esc(m.handover_from)}</span></div>` : ''}
+            ${m.handover_to ? `<div class="flex items-center gap-2 text-sm"><i data-lucide="user-plus" class="w-4 h-4 text-accent"></i> <span class="text-surface-500">To:</span> <span class="font-medium">${esc(m.handover_to)}</span></div>` : ''}
+          </div>
+        </div>` : ''}
+
         ${m.agenda ? `
         <div class="bg-white dark:bg-surface-850 rounded-xl border border-surface-200 dark:border-surface-700 p-5">
           <h2 class="text-xs font-semibold text-surface-500 uppercase tracking-wide mb-2">Agenda</h2>
@@ -784,27 +800,28 @@ function acceptSuggestion(itemId, btn) {
   toast('Commitment accepted');
 }
 
+// ── File upload helper ──
+function fileUploadField() {
+  return `
+    <div>
+      <label class="block text-xs font-medium text-surface-500 dark:text-surface-400 mb-1">Upload transcript <span class="text-surface-400">(optional — .txt, .md, .docx, .pdf)</span></label>
+      <label class="flex items-center gap-2 cursor-pointer border border-dashed border-surface-300 dark:border-surface-600 rounded-lg px-3 py-3 hover:border-accent transition-colors ${!aiEnabled ? 'opacity-50 cursor-not-allowed' : ''}">
+        <i data-lucide="upload" class="w-4 h-4 text-surface-400"></i>
+        <span id="modal-file-label" class="text-sm text-surface-400">Choose file…</span>
+        <input id="modal-file" type="file" accept=".txt,.md,.docx,.pdf" class="hidden" onchange="document.getElementById('modal-file-label').textContent=this.files[0]?.name||'Choose file…'" ${!aiEnabled ? 'disabled' : ''}>
+      </label>
+      ${!aiEnabled ? '<p class="text-[10px] text-amber-500 mt-1">AI is offline — upload disabled</p>' : ''}
+    </div>`;
+}
+
 // ── New Meeting Modal ──
-function openNewMeetingModal(defaultKind) {
+function openNewMeetingModal() {
   const body = `
     <div class="space-y-3">
       <div>
         <label class="block text-xs font-medium text-surface-500 dark:text-surface-400 mb-1">Title <span class="text-red-500">*</span></label>
         <input id="modal-m-title" class="w-full bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 rounded-lg px-3 py-2 text-sm" placeholder="Weekly sync — 30 Oct">
         <p id="modal-m-title-err" class="text-xs text-red-500 mt-0.5 hidden"></p>
-      </div>
-      <div class="grid grid-cols-2 gap-3">
-        <div>
-          <label class="block text-xs font-medium text-surface-500 dark:text-surface-400 mb-1">Type</label>
-          <select id="modal-m-kind" class="w-full bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 rounded-lg px-3 py-2 text-sm">
-            <option value="meeting" ${defaultKind !== 'handover' ? 'selected' : ''}>Meeting</option>
-            <option value="handover" ${defaultKind === 'handover' ? 'selected' : ''}>Handover</option>
-          </select>
-        </div>
-        <div>
-          <label class="block text-xs font-medium text-surface-500 dark:text-surface-400 mb-1">Carry from meeting ID</label>
-          <input id="modal-m-carry" type="number" class="w-full bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 rounded-lg px-3 py-2 text-sm" placeholder="e.g. 1">
-        </div>
       </div>
       <div>
         <label class="block text-xs font-medium text-surface-500 dark:text-surface-400 mb-1">Participants (comma separated)</label>
@@ -814,47 +831,112 @@ function openNewMeetingModal(defaultKind) {
         <label class="block text-xs font-medium text-surface-500 dark:text-surface-400 mb-1">Agenda</label>
         <input id="modal-m-agenda" class="w-full bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 rounded-lg px-3 py-2 text-sm" placeholder="Pricing, roadmap, hiring">
       </div>
+      ${fileUploadField()}
       <div class="flex justify-end gap-2 pt-2">
         <button onclick="closeModal()" class="text-sm font-medium text-surface-500 hover:text-surface-700 px-4 py-2 rounded-lg transition-colors">Cancel</button>
-        <button onclick="submitNewMeeting()" id="modal-m-submit" class="inline-flex items-center gap-2 bg-accent hover:bg-accent-dark text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
-          <i data-lucide="plus" class="w-4 h-4"></i> Create
+        <button onclick="submitMeetingOrHandover('meeting')" id="modal-m-submit" class="inline-flex items-center gap-2 bg-accent hover:bg-accent-dark text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
+          <i data-lucide="plus" class="w-4 h-4"></i> Create Meeting
         </button>
       </div>
     </div>`;
-  openModal('New Meeting / Handover', body);
+  openModal('New Meeting', body);
 }
 
-async function submitNewMeeting() {
+// ── New Handover Modal ──
+function openNewHandoverModal() {
+  const body = `
+    <div class="space-y-3">
+      <div>
+        <label class="block text-xs font-medium text-surface-500 dark:text-surface-400 mb-1">Title <span class="text-red-500">*</span></label>
+        <input id="modal-m-title" class="w-full bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 rounded-lg px-3 py-2 text-sm" placeholder="Backend handover — Oct 30">
+        <p id="modal-m-title-err" class="text-xs text-red-500 mt-0.5 hidden"></p>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-medium text-surface-500 dark:text-surface-400 mb-1">Handed over by</label>
+          <input id="modal-h-from" class="w-full bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 rounded-lg px-3 py-2 text-sm" placeholder="e.g. Rahul">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-surface-500 dark:text-surface-400 mb-1">Handing over to (assignee) <span class="text-red-500">*</span></label>
+          <input id="modal-h-to" class="w-full bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 rounded-lg px-3 py-2 text-sm" placeholder="e.g. Sam">
+          <p id="modal-h-to-err" class="text-xs text-red-500 mt-0.5 hidden"></p>
+        </div>
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-surface-500 dark:text-surface-400 mb-1">Participants (comma separated)</label>
+        <input id="modal-m-parts" class="w-full bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 rounded-lg px-3 py-2 text-sm" placeholder="Rahul, Sam, Priya">
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-surface-500 dark:text-surface-400 mb-1">Details / Agenda</label>
+        <input id="modal-m-agenda" class="w-full bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 rounded-lg px-3 py-2 text-sm" placeholder="Current state of the project, open issues, contacts">
+      </div>
+      ${fileUploadField()}
+      <div class="flex justify-end gap-2 pt-2">
+        <button onclick="closeModal()" class="text-sm font-medium text-surface-500 hover:text-surface-700 px-4 py-2 rounded-lg transition-colors">Cancel</button>
+        <button onclick="submitMeetingOrHandover('handover')" id="modal-m-submit" class="inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
+          <i data-lucide="arrow-right-left" class="w-4 h-4"></i> Create Handover
+        </button>
+      </div>
+    </div>`;
+  openModal('New Handover', body);
+}
+
+// ── Submit Meeting or Handover (with optional file upload) ──
+async function submitMeetingOrHandover(kind) {
   const title = document.getElementById('modal-m-title').value.trim();
   const errEl = document.getElementById('modal-m-title-err');
   if (!title) { errEl.textContent = 'Title is required'; errEl.classList.remove('hidden'); return; }
   errEl.classList.add('hidden');
 
+  const handoverFrom = document.getElementById('modal-h-from')?.value.trim() || '';
+  const handoverTo = document.getElementById('modal-h-to')?.value.trim() || '';
+  if (kind === 'handover') {
+    const toErr = document.getElementById('modal-h-to-err');
+    if (!handoverTo) { toErr.textContent = 'Assignee is required'; toErr.classList.remove('hidden'); return; }
+    toErr.classList.add('hidden');
+  }
+
+  const fileInput = document.getElementById('modal-file');
+  const file = fileInput?.files?.[0];
+
   const btn = document.getElementById('modal-m-submit');
   btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span> Creating…';
+  btn.innerHTML = file ? '<span class="spinner"></span> Uploading & extracting…' : '<span class="spinner"></span> Creating…';
 
-  const parts = document.getElementById('modal-m-parts').value.split(',').map(s => s.trim()).filter(Boolean);
-  const body = {
-    title,
-    kind: document.getElementById('modal-m-kind').value,
-    participants: parts,
-    agenda: document.getElementById('modal-m-agenda').value
-  };
-  const carry = document.getElementById('modal-m-carry').value;
-  let path = '/api/meetings';
-  if (carry) path += '?carry_from=' + encodeURIComponent(carry);
+  const parts = document.getElementById('modal-m-parts').value;
+  const agenda = document.getElementById('modal-m-agenda').value;
 
   try {
-    const m = await api(path, { method: 'POST', body: JSON.stringify(body) });
-    toast('Meeting #' + m.id + ' created');
+    let m;
+    if (file) {
+      const fd = new FormData();
+      fd.append('title', title);
+      fd.append('kind', kind);
+      fd.append('participants', parts);
+      fd.append('agenda', agenda);
+      if (handoverFrom) fd.append('handover_from', handoverFrom);
+      if (handoverTo) fd.append('handover_to', handoverTo);
+      fd.append('file', file);
+      const res = await fetch('/api/meetings/upload', { method: 'POST', body: fd });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.detail || 'HTTP ' + res.status);
+      m = data;
+      toast(kind === 'handover' ? 'Handover created with AI extraction' : 'Meeting created with AI extraction');
+    } else {
+      const body = { title, kind, participants: parts.split(',').map(s=>s.trim()).filter(Boolean), agenda };
+      if (kind === 'handover') { body.handover_from = handoverFrom || null; body.handover_to = handoverTo || null; }
+      m = await api('/api/meetings', { method: 'POST', body: JSON.stringify(body) });
+      toast((kind === 'handover' ? 'Handover' : 'Meeting') + ' #' + m.id + ' created');
+    }
     closeModal();
     await loadAllData();
     openMeetingDetail(m.id);
   } catch(e) {
     toast('Error: ' + e.message, 'error');
     btn.disabled = false;
-    btn.innerHTML = '<i data-lucide="plus" class="w-4 h-4"></i> Create';
+    const icon = kind === 'handover' ? 'arrow-right-left' : 'plus';
+    const label = kind === 'handover' ? 'Create Handover' : 'Create Meeting';
+    btn.innerHTML = `<i data-lucide="${icon}" class="w-4 h-4"></i> ${label}`;
     lucide.createIcons({ attrs: {}, nameAttr: 'data-lucide' });
   }
 }

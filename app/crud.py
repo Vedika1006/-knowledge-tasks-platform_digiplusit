@@ -22,9 +22,11 @@ VALID_TRANSITIONS = {
 
 # ---------- Meetings ----------
 
-def create_meeting(db: Session, title, kind, participants, agenda):
+def create_meeting(db: Session, title, kind, participants, agenda,
+                   handover_from=None, handover_to=None):
     meeting = models.Meeting(
-        title=title, kind=kind, participants=participants, agenda=agenda
+        title=title, kind=kind, participants=participants, agenda=agenda,
+        handover_from=handover_from, handover_to=handover_to,
     )
     db.add(meeting)
     db.commit()

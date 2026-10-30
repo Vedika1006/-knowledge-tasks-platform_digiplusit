@@ -58,6 +58,8 @@ class MeetingCreate(BaseModel):
     kind: str = Field(default="meeting")
     participants: list[str] = Field(default_factory=list)
     agenda: str = Field(default="", max_length=5000)
+    handover_from: Optional[str] = Field(default=None, max_length=120)
+    handover_to: Optional[str] = Field(default=None, max_length=120)
 
     @field_validator("kind")
     @classmethod
@@ -73,6 +75,8 @@ class MeetingOut(BaseModel):
     title: str
     participants: list[str]
     agenda: str
+    handover_from: Optional[str] = None
+    handover_to: Optional[str] = None
     raw_notes: str
     summary: str
     decisions: list[str]

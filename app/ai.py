@@ -149,7 +149,7 @@ def extract_recap(raw_text: str) -> dict:
     prompt = f"""You are an assistant that turns messy meeting/handover notes into structured data.
 Return ONLY valid JSON, no explanation, in exactly this shape:
 {{
-  "summary": "2-3 sentence plain-language summary",
+  "summary": "A DETAILED point-wise summary: multiple bullet-style sentences covering the context/background discussed, key decisions made, and follow-ups or next steps agreed upon. Be thorough — capture every substantive point, not just one line.",
   "decisions": ["each decision as a short sentence"],
   "action_items": [
     {{"description": "what needs doing", "owner": "person name or Unassigned", "due_date": "date/day if mentioned, else empty string"}}
