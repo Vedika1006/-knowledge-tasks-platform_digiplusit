@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Knowledge & Tasks Platform</title>
+<style>
+  :root{
+    --bg:#0f1420; --panel:#171e2e; --panel2:#1e2740; --line:#2a344f;
+    --text:#e7ecf5; --muted:#93a0bd; --accent:#5b8cff; --accent2:#7c5bff;
+    --ok:#3ddc97; --warn:#ffcc66; --danger:#ff6b6b; --suggest:#c084fc;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+       background:var(--bg);color:var(--text);line-height:1.5}
+  header{padding:18px 24px;border-bottom:1px solid var(--line);
+         background:linear-gradient(90deg,#141b2b,#1a2138);display:flex;
+         align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+  header h1{font-size:18px;margin:0;font-weight:650}
+  header .status{font-size:12px;color:var(--muted)}
+  .wrap{max-width:1150px;margin:0 auto;padding:20px;display:grid;
+        grid-template-columns:1fr 1fr;gap:16px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}
+  .card h2{font-size:14px;margin:0 0 12px;color:var(--accent);letter-spacing:.3px;
+           text-transform:uppercase;font-weight:650}
+  .full{grid-column:1/-1}
+  label{display:block;font-size:12px;color:var(--muted);margin:8px 0 4px}
+  input,textarea,select{width:100%;background:var(--panel2);border:1px solid var(--line);
+         color:var(--text);border-radius:8px;padding:9px 11px;font-size:13px;font-family:inherit}
+  textarea{resize:vertical;min-height:70px}
+  button{background:var(--accent);color:#fff;border:0;border-radius:8px;padding:9px 14px;
+         font-size:13px;font-weight:600;cursor:pointer;margin-top:10px}
+  button:hover{filter:brightness(1.1)}
+  button.ghost{background:transparent;border:1px solid var(--line);color:var(--muted);
+         padding:4px 9px;font-size:11px;margin:0}
+  button.ghost:hover{color:var(--text)}
+  .meeting{border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:10px;background:var(--panel2)}
+  .meeting .top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .kind{font-size:10px;text-transform:uppercase;padding:2px 7px;border-radius:20px;
+        background:#263252;color:var(--muted);letter-spacing:.5px}
+  .summary{font-size:13px;color:var(--muted);margin:8px 0}
+  .decisions{font-size:12px;margin:6px 0}
+  .decisions li{color:var(--text)}
+  .item{display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-top:1px solid var(--line);font-size:13px}
+  .item .desc{flex:1}
+  .badge{font-size:10px;padding:1px 7px;border-radius:20px;white-space:nowrap}
+  .b-open{background:#2a3550;color:#9fb4 e0}
+  .b-open{background:#2a3550;color:#9fb4e0}
+  .b-in_progress{background:#4a3f12;color:var(--warn)}
+  .b-closed{background:#123a2a;color:var(--ok)}
+  .b-suggested{background:#2e1a44;color:var(--suggest);border:1px solid #4a2d6e}
+  .owner{font-size:11px;color:var(--muted)}
+  .suggest-note{font-size:11px;color:var(--suggest);margin-top:2px}
+  .brief-out,.link-out{white-space:pre-wrap;font-size:13px;background:var(--panel2);
+        border:1px solid var(--line);border-radius:8px;padding:12px;margin-top:10px;color:var(--text);min-height:20px}
+  .muted{color:var(--muted);font-size:12px}
+  .row{display:flex;gap:8px}
+  .row>*{flex:1}
+  select.status-sel{width:auto;padding:3px 6px;font-size:11px;margin:0}
+</style>
+</head>
+<body>
+<header>
+  <h1>🧠 AI Knowledge &amp; Tasks Platform</h1>
+  <div class="status" id="status">checking…</div>
+</header>
+
+<div class="wrap">
+
+  <!-- CREATE MEETING + EXTRACT -->
+  <div class="card">
+    <h2>1 · New Meeting / Handover</h2>
+    <label>Title</label>
+    <input id="m-title" placeholder="Weekly sync — 30 Oct">
+    <div class="row">
+      <div>
+        <label>Type</label>
+        <select id="m-kind"><option value="meeting">meeting</option><option value="handover">handover</option></select>
+      </div>
+      <div>
+        <label>Carry open items from meeting ID (optional)</label>
+        <input id="m-carry" type="number" placeholder="e.g. 1">
+      </div>
+    </div>
+    <label>Participants (comma separated)</label>
+    <input id="m-parts" placeholder="Rahul, Priya, Sam">
+    <label>Agenda</label>
+    <input id="m-agenda" placeholder="Pricing, roadmap, hiring">
+    <button onclick="createMeeting()">Create meeting</button>
+  </div>
+
+  <div class="card">
+    <h2>2 · Paste Raw Notes → AI Recap</h2>
+    <label>Meeting ID to attach to</label>
+    <input id="e-mid" type="number" placeholder="meeting id">
+    <label>Raw notes / chat / email dump</label>
+    <textarea id="e-raw" placeholder="discussed pricing. Rahul will send revised quote by Friday. We agreed to drop the free tier. Priya said she'll loop in finance about the refund policy..."></textarea>
+    <button onclick="extract()">Run AI extraction + commitment catcher</button>
+    <div class="muted" id="e-status" style="margin-top:8px"></div>
+  </div>
+
+  <!-- MEETINGS LIST -->
+  <div class="card full">
+    <h2>3 · Meetings &amp; Action Items <button class="ghost" onclick="loadMeetings()">↻ refresh</button></h2>
+    <div id="meetings"></div>
+  </div>
+
+  <!-- BRIEF -->
+  <div class="card">
+    <h2>4 · AI Catch-up Brief</h2>
+    <label>Person name</label>
+    <input id="b-person" placeholder="Rahul">
+    <button onclick="getBrief()">Generate brief</button>
+    <div class="brief-out" id="b-out"></div>
+  </div>
+
+  <!-- KNOWLEDGE -->
+  <div class="card">
+    <h2>5 · Knowledge Base + AI Linking</h2>
+    <label>Add a document — title</label>
+    <input id="k-title" placeholder="Q3 pricing decision">
+    <label>Content</label>
+    <textarea id="k-content" placeholder="In Q3 we decided to move to usage-based pricing..."></textarea>
+    <button onclick="addKnowledge()">Add document</button>
+    <hr style="border-color:var(--line);margin:14px 0">
+    <label>Find related docs for…</label>
+    <input id="k-query" placeholder="revise the pricing quote">
+    <button onclick="linkKnowledge()">Find related (semantic)</button>
+    <div class="link-out" id="k-out"></div>
+  </div>
+
+</div>
+
+<script>
+const API = ""; // same origin
+
+async function api(path, opts={}){
+  const res = await fetch(API + path, {
+    headers:{"Content-Type":"application/json"}, ...opts
+  });
+  const data = await res.json().catch(()=>({}));
+  if(!res.ok){ throw new Error(data.detail || ("HTTP "+res.status)); }
+  return data;
+}
+
+async function checkHealth(){
+  try{
+    const h = await api("/api/health");
+    document.getElementById("status").textContent =
+      h.ai_enabled ? "● AI online (Gemini)" : "● AI off — rule-based fallback mode";
+    document.getElementById("status").style.color = h.ai_enabled ? "var(--ok)" : "var(--warn)";
+  }catch(e){ document.getElementById("status").textContent = "backend unreachable"; }
+}
+
+async function createMeeting(){
+  const parts = document.getElementById("m-parts").value.split(",").map(s=>s.trim()).filter(Boolean);
+  const body = {
+    title: document.getElementById("m-title").value,
+    kind: document.getElementById("m-kind").value,
+    participants: parts,
+    agenda: document.getElementById("m-agenda").value
+  };
+  const carry = document.getElementById("m-carry").value;
+  let path = "/api/meetings";
+  if(carry) path += "?carry_from="+encodeURIComponent(carry);
+  try{
+    const m = await api(path, {method:"POST", body:JSON.stringify(body)});
+    document.getElementById("e-mid").value = m.id;
+    alert("Created meeting #"+m.id);
+    loadMeetings();
+  }catch(e){ alert("Error: "+e.message); }
+}
+
+async function extract(){
+  const mid = document.getElementById("e-mid").value;
+  const raw = document.getElementById("e-raw").value;
+  if(!mid){ alert("Enter a meeting ID first (create a meeting above)."); return; }
+  const s = document.getElementById("e-status");
+  s.textContent = "Running AI… (extraction + second-pass commitment catcher)";
+  try{
+    await api(`/api/meetings/${mid}/extract`, {method:"POST", body:JSON.stringify({raw_text:raw})});
+    s.textContent = "Done ✓ — see results below.";
+    loadMeetings();
+  }catch(e){ s.textContent = "Error: "+e.message; }
+}
+
+async function updateStatus(itemId, status){
+  try{ await api(`/api/items/${itemId}`, {method:"PATCH", body:JSON.stringify({status})}); loadMeetings(); }
+  catch(e){ alert("Error: "+e.message); }
+}
+async function acceptSuggestion(itemId){
+  // accepting = just flip it to a normal open item by setting status open (source stays, but it's now tracked)
+  // here we simply reassign to confirm; simplest: patch owner unchanged -> it's already open, so we mark via outcome cleared
+  loadMeetings();
+}
+
+async function loadMeetings(){
+  const box = document.getElementById("meetings");
+  try{
+    const meetings = await api("/api/meetings");
+    if(!meetings.length){ box.innerHTML = '<div class="muted">No meetings yet.</div>'; return; }
+    box.innerHTML = meetings.map(renderMeeting).join("");
+  }catch(e){ box.innerHTML = '<div class="muted">Error: '+e.message+'</div>'; }
+}
+
+function renderMeeting(m){
+  const decisions = (m.decisions||[]).length
+    ? `<div class="decisions"><b>Decisions:</b><ul>${m.decisions.map(d=>`<li>${esc(d)}</li>`).join("")}</ul></div>` : "";
+  const items = (m.action_items||[]).map(renderItem).join("") || '<div class="muted" style="padding-top:6px">No action items.</div>';
+  return `<div class="meeting">
+    <div class="top">
+      <div><b>#${m.id} · ${esc(m.title)}</b> <span class="kind">${m.kind}</span></div>
+      <span class="muted">${(m.participants||[]).join(", ")}</span>
+    </div>
+    ${m.summary?`<div class="summary">${esc(m.summary)}</div>`:""}
+    ${decisions}
+    ${items}
+  </div>`;
+}
+
+function renderItem(it){
+  const isSuggested = it.source === "suggested";
+  const badge = isSuggested
+    ? `<span class="badge b-suggested">suggested</span>`
+    : `<span class="badge b-${it.status}">${it.status}</span>`;
+  const statusSel = !isSuggested ? `
+    <select class="status-sel" onchange="updateStatus(${it.id}, this.value)">
+      <option ${it.status==='open'?'selected':''}>open</option>
+      <option value="in_progress" ${it.status==='in_progress'?'selected':''}>in_progress</option>
+      <option value="closed" ${it.status==='closed'?'selected':''}>closed</option>
+    </select>` : `<button class="ghost" onclick="updateStatus(${it.id},'open')">accept</button>`;
+  return `<div class="item">
+    <div class="desc">
+      ${esc(it.description)}
+      <div class="owner">owner: ${esc(it.owner)} ${it.due_date?("· due "+esc(it.due_date)):""} ${it.parent_item_id?("· carried from #"+it.parent_item_id):""}</div>
+      ${isSuggested?'<div class="suggest-note">⚡ Commitment Catcher: implied promise — review</div>':''}
+    </div>
+    ${badge}
+    ${statusSel}
+  </div>`;
+}
+
+async function getBrief(){
+  const p = document.getElementById("b-person").value.trim();
+  if(!p){ alert("Enter a person name"); return; }
+  const out = document.getElementById("b-out");
+  out.textContent = "Generating…";
+  try{ const r = await api(`/api/brief/${encodeURIComponent(p)}`); out.textContent = r.brief; }
+  catch(e){ out.textContent = "Error: "+e.message; }
+}
+
+async function addKnowledge(){
+  const body = {title:document.getElementById("k-title").value, content:document.getElementById("k-content").value};
+  try{ const r = await api("/api/knowledge",{method:"POST",body:JSON.stringify(body)}); alert("Added doc #"+r.id); }
+  catch(e){ alert("Error: "+e.message); }
+}
+async function linkKnowledge(){
+  const q = document.getElementById("k-query").value.trim();
+  const out = document.getElementById("k-out");
+  if(!q){ alert("Enter a query"); return; }
+  out.textContent="Searching…";
+  try{
+    const r = await api("/api/knowledge/link?q="+encodeURIComponent(q));
+    out.textContent = r.related.length
+      ? r.related.map(d=>`• ${d.title}  (score ${d.score}, via ${d.method})`).join("\n")
+      : "No related documents found.";
+  }catch(e){ out.textContent="Error: "+e.message; }
+}
+
+function esc(s){ return (s||"").replace(/[&<>]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c])); }
+
+checkHealth();
+loadMeetings();
+</script>
+</body>
+</html>
